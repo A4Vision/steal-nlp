@@ -126,8 +126,8 @@ def get_dict_vectorizer(examples):
 def load_data(num_dev_sents, num_train_sents):
     global tag_to_index_dict, index_to_tag_dict
     random.seed(123)
-    original_train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")[:num_train_sents]
-    original_dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")[:num_dev_sents]
+    original_train_sents = read_conll_pos_file("data/Penn_Treebank/train.gold.conll")[:num_train_sents]
+    original_dev_sents = read_conll_pos_file("data/Penn_Treebank/dev.gold.conll")[:num_dev_sents]
     random.shuffle(original_dev_sents)
     random.shuffle(original_train_sents)
     vocab = compute_vocab_count(original_train_sents)

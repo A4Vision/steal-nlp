@@ -170,8 +170,8 @@ def hmm_eval(test_data, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts, e
 
 
 def main():
-    train_sents = read_conll_pos_file("Penn_Treebank/train.gold.conll")
-    dev_sents = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
+    train_sents = read_conll_pos_file("data/Penn_Treebank/train.gold.conll")
+    dev_sents = read_conll_pos_file("data/Penn_Treebank/dev.gold.conll")
     vocab = compute_vocab_count(train_sents)
 
     train_sents = preprocess_sent(vocab, train_sents)
@@ -192,8 +192,8 @@ def main():
     print 'best lambdas', best_lambdas
     print "dev: acc hmm viterbi: {}".format(best_accuracy)
 
-    if os.path.exists("Penn_Treebank/test.gold.conll"):
-        test_sents = read_conll_pos_file("Penn_Treebank/test.gold.conll")
+    if os.path.exists("data/Penn_Treebank/test.gold.conll"):
+        test_sents = read_conll_pos_file("data/Penn_Treebank/test.gold.conll")
         test_sents = preprocess_sent(vocab, test_sents)
         l1, l2 = best_lambdas
         acc_viterbi = hmm_eval(test_sents, total_tokens, q_tri_counts, q_bi_counts, q_uni_counts,

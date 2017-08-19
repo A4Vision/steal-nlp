@@ -62,8 +62,8 @@ def most_frequent_debug_categories(original_sentences, sentences, pred_tags):
 
 if __name__ == "__main__":
     assert most_frequent(collections.Counter([1, 2, 1, 1, 2, 3,])) == 1
-    a = read_conll_pos_file("Penn_Treebank/train.gold.conll")
-    b = read_conll_pos_file("Penn_Treebank/dev.gold.conll")
+    a = read_conll_pos_file("data/Penn_Treebank/train.gold.conll")
+    b = read_conll_pos_file("data/Penn_Treebank/dev.gold.conll")
     original_dev_sentences = random.sample(a + b, len(b))
     original_train_sents = [x for x in a + b if x not in original_dev_sentences]
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     print "dev: most frequent acc: {}".format(most_frequent_eval(dev_sents, model))
 
-    if os.path.exists('Penn_Treebank/test.gold.conll'):
-        test_sents = read_conll_pos_file("Penn_Treebank/test.gold.conll")
+    if os.path.exists('data/Penn_Treebank/test.gold.conll'):
+        test_sents = read_conll_pos_file("data/Penn_Treebank/test.gold.conll")
         test_sents = preprocess_sent(vocab, test_sents)
         print "test: most frequent acc: {}".format(most_frequent_eval(test_sents, model))
