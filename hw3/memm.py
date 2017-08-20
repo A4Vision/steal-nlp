@@ -13,7 +13,11 @@ from hw3.data import *
 BEGIN_TAG = '*'
 END_TAG = 'STOP'
 
-tag_to_index_dict, index_to_tag_dict = {}, {}
+index_to_tag = ['#', '$', "''", ',', '-LRB-', '-RRB-', '.', ':', 'CC', 'CD', 'DT', 'EX', 'FW', 'IN', 'JJ', 'JJR', 'JJS',
+                'LS', 'MD', 'NN', 'NNP', 'NNPS', 'NNS', 'PDT', 'POS', 'PRP', 'PRP$', 'RB', 'RBR', 'RBS', 'RP', 'SYM',
+                'TO', 'UH', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ', 'WDT', 'WP', 'WP$', 'WRB', '``']
+index_to_tag_dict = {i: tag for i, tag in enumerate(index_to_tag)}
+tag_to_index_dict = {tag: i for i, tag in enumerate(index_to_tag)}
 
 
 def get_tag(index):
@@ -46,7 +50,6 @@ def extract_features_base(curr_word, next_word, prev_word, prevprev_word, prev_t
     features['is_cap'] = curr_word[0].isupper() and prev_tag != BEGIN_TAG
     features['prev_is_cap'] = prev_word[0].isupper() and prevprev_tag != BEGIN_TAG
     features['next_is_cap'] = next_word[0].isupper()
-
 
     # To reduce features amount, we did not use the folowing features:
     # features['prev_word_tag'] = prev_word + ' ' + prev_tag
@@ -124,7 +127,6 @@ def get_dict_vectorizer(examples):
 
 
 def load_data(num_dev_sents, num_train_sents):
-    global tag_to_index_dict, index_to_tag_dict
     random.seed(123)
     original_train_sents = read_conll_pos_file("data/Penn_Treebank/train.gold.conll")[:num_train_sents]
     original_dev_sents = read_conll_pos_file("data/Penn_Treebank/dev.gold.conll")[:num_dev_sents]
@@ -135,14 +137,6 @@ def load_data(num_dev_sents, num_train_sents):
     dev_sents = preprocess_sent(vocab, original_dev_sents)
 
     # The log-linear model training.
-    # NOTE: this part of the code is just a suggestion! You can change it as you wish!
-    tags = set([token[1] for train_sent in train_sents for token in train_sent])
-    # Sort the tags, to make the indexing consistent among different runs.
-    tags = sorted(tags)
-    tag_to_index_dict = {tag: i for i, tag in enumerate(tags)}
-    # Invert the dictionary.
-    index_to_tag_dict = {v: k for k, v in tag_to_index_dict.iteritems()}
-
     print "Create train examples"
     train_examples, train_labels = create_examples(train_sents)
     num_train_examples = len(train_examples)

@@ -1,10 +1,11 @@
-import time
 import os
 import cPickle
 import gzip
 import numpy as np
 import scipy.sparse
+import argparse
 import sys
+
 import theanets
 import theanets.util
 import theanets.layers.base
@@ -12,6 +13,7 @@ import theano.tensor as TT
 from sklearn import linear_model
 from hw3 import utils
 from hw3 import memm
+DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(os.__file__)), "data")
 
 
 def convert_int32((x, y)):
@@ -116,11 +118,13 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
         else:
             layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), output_size]
         net = theanets.Classifier(layers, loss='xe')
+        valid_acc = 0.
 
     # 2. train the model.
     print "Training..."
     alpha = 1.
-    for eta in [0.01, 0.05]:
+    best_validation = valid_acc
+    for eta in [3., 0.01, 0.05]:
         print '(eta, alpha)', (eta, alpha)
         count = 0
         for train, valid in net.itertrain([train_data, np.int32(train_labels)],
@@ -128,8 +132,12 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
                                           algo='sgd',
                                           learning_rate=eta,
                                           hidden_l1=alpha):
-            net.save(model_fname)
+
             valid_acc = np.sum(net.predict(validation_data) == np.int32(validation_labels)) / float(len(validation_labels))
+            if valid_acc > best_validation:
+                best_validation = valid_acc
+                "Improved, saving the model !"
+                net.save(model_fname)
             print 'valid acc', valid_acc
             count += 1
             if valid_acc > minimal_accuracy or count == 2:
@@ -307,8 +315,18 @@ def examine_stealing(num_dev_sents, num_train_sents, model_fname, hidden_layer_s
 
 
 if __name__ == '__main__':
-    # train_mnist_example()
-    only_load_model(123456, 5000, "/home/bugabuga/hw3_models/good_classifier_hidden45.pkl", 45)
-    # only_load_model(123456, 123456, "/home/bugabuga/hw3_models/good_classifier.pkl", 0)
-    # examine_stealing(123456, 123456, "/home/bugabuga/hw3_models/good_classifier_hidden100.pkl", 100)
-    # examine_stealing(123456, 123546, "/home/bugabuga/hw3_models/good_classifier.pkl", 0)
+    parser = argparse.ArgumentParser(description='Train and steal POS model.')
+    parser.add_argument("classifier_file_name", type=str)
+    parser.add_argument("--valid_size", default=123456, type=int)
+    parser.add_argument("--train_size", default=123456, type=int)
+    parser.add_argument("--hidden_size", default=0, type=int)
+    parser.add_argument("--action", choices=["train", "steal"])
+    args = parser.parse_args(sys.argv[1:])
+    train_mnist_example()
+    assert os.path.sep not in args.classifier_file_name
+    if args.action == "train":
+        only_load_model(args.valid_size, args.train_size, os.path.join(DATA_PATH, args.classifier_file_name),
+                        args.hidden_size)
+    elif args.action == "steal":
+        examine_stealing(args.valid_size, args.train_size, os.path.join(DATA_PATH, args.classifier_file_name),
+                         args.hidden_size)
