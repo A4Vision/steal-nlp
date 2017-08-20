@@ -1,3 +1,4 @@
+import random
 import os
 import cPickle
 import gzip
@@ -10,10 +11,15 @@ import theanets
 import theanets.util
 import theanets.layers.base
 import theano.tensor as TT
-from sklearn import linear_model
+import time
+
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
+DATA_PATH = os.path.join(BASE_DIR, "data")
+sys.path.insert(0, ROOT_DIR)
+
 from hw3 import utils
 from hw3 import memm
-DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(os.__file__)), "data")
 
 
 def convert_int32((x, y)):
@@ -55,11 +61,10 @@ class RegressionCrossEntropyInverted(theanets.losses.Loss):
     def __call__(self, outputs):
         output = outputs[self.output_name]
         # eps = 1e-8
-        prob = output # TT.clip(output, eps, 1 - eps)
+        prob = output  # TT.clip(output, eps, 1 - eps)
         actual = self._target
         cross_entropy = -prob * TT.log(actual)
         return cross_entropy.mean()
-
 
 
 def predict_from_regression(net, data):
@@ -76,7 +81,8 @@ def train_mnist_example():
     print 'loading'
     train_data, validation_data, test_data = map(transform_data_to_distributions,
                                                  map(convert_to_sparse,
-                                                 map(convert_int32, cPickle.load(gzip.open("/home/bugabuga/PycharmProjects/Steal-ML/data/mnist.pkl.gz")))))
+                                                     map(convert_int32, cPickle.load(gzip.open(
+                                                         "/home/bugabuga/PycharmProjects/Steal-ML/data/mnist.pkl.gz")))))
 
     # 1. create a model -- here, a regression model.
     net = theanets.Regressor([theanets.layers.base.Input(size=train_data[0].shape[1], sparse='csr'), 100,
@@ -95,11 +101,12 @@ def train_mnist_example():
     print 'acc', acc
 
 
-def get_model(train_data, train_labels, validation_data, validation_labels, model_fname, output_size, hidden_layer_size):
-    minimal_accuracy = 0.95
+def get_model(train_data, train_labels, validation_data, validation_labels, model_fname, output_size,
+              hidden_layer_size):
+    minimal_accuracy = 0.964
     # 1. create a model -- here, a regression model.
     print "fname", model_fname
-    if os.path.exists(model_fname + "..."):
+    if os.path.exists(model_fname):
         print "Loading an existing model..."
         net = theanets.Classifier.load(model_fname)
         net._rng = 13
@@ -114,7 +121,8 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
 
         if hidden_layer_size > 0:
             hidden_layer = dict(name='hidden1', size=hidden_layer_size, std=1. / hidden_layer_size ** 0.5)
-            layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), hidden_layer, dict(size=output_size, diagonal=1)]
+            layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), hidden_layer,
+                      dict(size=output_size, diagonal=1)]
         else:
             layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), output_size]
         net = theanets.Classifier(layers, loss='xe')
@@ -124,24 +132,29 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
     print "Training..."
     alpha = 1.
     best_validation = valid_acc
-    for eta in [3., 0.01, 0.05]:
-        print '(eta, alpha)', (eta, alpha)
-        count = 0
-        for train, valid in net.itertrain([train_data, np.int32(train_labels)],
-                                          valid=[validation_data, np.int32(validation_labels)],
-                                          algo='sgd',
-                                          learning_rate=eta,
-                                          hidden_l1=alpha):
+    random.seed(time.time())
+    tmp_filename = "/tmp/first_{}.pkl".format(random.randint(0, 10000))
+    assert not os.path.exists(tmp_filename)
+    # net.save(tmp_filename)
+    #     net = theanets.Classifier.load(tmp_filename)
+    #     net._rng = 13
+    eta = 1.
+    print '(eta, alpha)', (eta, alpha)
+    for train, valid in net.itertrain([train_data, np.int32(train_labels)],
+                                      valid=[validation_data, np.int32(validation_labels)],
+                                      algo='sgd',
+                                      learning_rate=eta,
+                                      hidden_l1=alpha):
 
-            valid_acc = np.sum(net.predict(validation_data) == np.int32(validation_labels)) / float(len(validation_labels))
-            if valid_acc > best_validation:
-                best_validation = valid_acc
-                "Improved, saving the model !"
-                net.save(model_fname)
-            print 'valid acc', valid_acc
-            count += 1
-            if valid_acc > minimal_accuracy or count == 2:
-                break
+        valid_acc = np.sum(net.predict(validation_data) == np.int32(validation_labels)) / float(
+            len(validation_labels))
+        if valid_acc > best_validation:
+            best_validation = valid_acc
+            print "Improved validation accuracy, saving the model !"
+            net.save(model_fname)
+        print 'validation acc', valid_acc
+        if valid_acc > minimal_accuracy:
+            break
 
     return net
 
@@ -169,6 +182,7 @@ class ModelInterface(object):
     Output of predict_proba(): Tagging probablity vector for each word,
         based on a greedy decoding.
     """
+
     def __init__(self, model, dict_vectorizer, sentences_filter=lambda: True):
         """
 
@@ -218,7 +232,8 @@ class SamplingSentencesGenerator(utils.TaggedSentenceGenerator):
         return sorted_sentences[-1][1]
 
 
-def steal_by_labels(word_count, tag_count, original_model, dict_vectorizer, output_size, validation_examples, hidden_layer_size):
+def steal_by_labels(word_count, tag_count, original_model, dict_vectorizer, output_size, validation_examples,
+                    hidden_layer_size):
     random_sentences = generate_random_sentences(word_count, tag_count, 10000)
     sparse_features = dict_vectorizer.transform(random_sentences)
 
@@ -259,6 +274,7 @@ def compare_models(stolen_model, original_model, test_examples):
     """
     pass
 
+
 global_timer = utils.Timer("global")
 
 
@@ -266,7 +282,10 @@ def only_load_model(num_dev_sents, num_train_sents, model_fname, hidden_layer_si
     global global_timer
     global_timer.start_part("LoadingData")
     print "* Loading data."
-    dict_vectorizer, (word_count, tag_count), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels = memm.load_data(num_dev_sents, num_train_sents)
+    dict_vectorizer, (word_count,
+                      tag_count), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels = memm.load_data(
+        DATA_PATH,
+        num_dev_sents, num_train_sents)
     print global_timer
 
     global_timer.start_part("CreatingModel")
@@ -281,7 +300,8 @@ def only_load_model(num_dev_sents, num_train_sents, model_fname, hidden_layer_si
     # print time.time() - start
     # assert max(train_labels) == max(dev_labels)
     output_size = max(max(train_labels), max(dev_labels)) + 1
-    original_model = get_model(train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels, model_fname, output_size, hidden_layer_size)
+    original_model = get_model(train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels,
+                               model_fname, output_size, hidden_layer_size)
     print global_timer
 
     return original_model
@@ -291,21 +311,25 @@ def examine_stealing(num_dev_sents, num_train_sents, model_fname, hidden_layer_s
     global global_timer
     global_timer.start_part("LoadingData")
     print "* Loading data."
-    dict_vectorizer, (word_count, tag_count), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels = memm.load_data(num_dev_sents, num_train_sents)
+    dict_vectorizer, (word_count,
+                      tag_count), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels = memm.load_data(
+        num_dev_sents, num_train_sents)
     print global_timer
 
     global_timer.start_part("CreatingModel")
     print "* Creating original model."
     # assert max(train_labels) == max(dev_labels)
     output_size = max(max(train_labels), max(dev_labels)) + 1
-    original_model = get_model(train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels, model_fname, output_size, hidden_layer_size)
+    original_model = get_model(train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels,
+                               model_fname, output_size, hidden_layer_size)
     # Maybe we loaded a model from file, and that model has more possible labels.
     output_size = max(output_size, original_model.find('out', 'b').get_value().shape[0])
     print global_timer
 
     global_timer.start_part("StealingModel")
     print "* Stealing model."
-    stolen_model = steal_by_labels(word_count, tag_count, original_model, dict_vectorizer, output_size, train_examples_vectorized, hidden_layer_size)
+    stolen_model = steal_by_labels(word_count, tag_count, original_model, dict_vectorizer, output_size,
+                                   train_examples_vectorized, hidden_layer_size)
     print global_timer
 
     global_timer.start_part("ComparingModels")
@@ -321,8 +345,11 @@ if __name__ == '__main__':
     parser.add_argument("--train_size", default=123456, type=int)
     parser.add_argument("--hidden_size", default=0, type=int)
     parser.add_argument("--action", choices=["train", "steal"])
-    args = parser.parse_args(sys.argv[1:])
-    train_mnist_example()
+    try:
+        args = parser.parse_args(sys.argv[1:])
+    except:
+        parser.print_help()
+        raise
     assert os.path.sep not in args.classifier_file_name
     if args.action == "train":
         only_load_model(args.valid_size, args.train_size, os.path.join(DATA_PATH, args.classifier_file_name),

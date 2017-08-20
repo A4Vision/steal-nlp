@@ -1,13 +1,8 @@
-import os
 import utils
-import sys
-import time
 import cPickle
 import collections
 import random
-import numpy as np
 from sklearn.feature_extraction import DictVectorizer
-from sklearn import linear_model
 from hw3.data import *
 
 BEGIN_TAG = '*'
@@ -113,8 +108,8 @@ def count_word_tags(tagged_sentences):
     return words_counter, tags_counter
 
 
-def get_dict_vectorizer(examples):
-    DICT_VEC_FNAME = "data/dict_vec.pkl"
+def get_dict_vectorizer(data_path, examples):
+    DICT_VEC_FNAME = os.path.join(data_path, "dict_vec.pkl")
     if os.path.exists(DICT_VEC_FNAME):
         vec = cPickle.load(open(DICT_VEC_FNAME, "rb"))
         return vec
@@ -126,10 +121,10 @@ def get_dict_vectorizer(examples):
         return vec
 
 
-def load_data(num_dev_sents, num_train_sents):
+def load_data(data_path, num_dev_sents, num_train_sents):
     random.seed(123)
-    original_train_sents = read_conll_pos_file("data/Penn_Treebank/train.gold.conll")[:num_train_sents]
-    original_dev_sents = read_conll_pos_file("data/Penn_Treebank/dev.gold.conll")[:num_dev_sents]
+    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))[:num_train_sents]
+    original_dev_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/dev.gold.conll"))[:num_dev_sents]
     random.shuffle(original_dev_sents)
     random.shuffle(original_train_sents)
     vocab = compute_vocab_count(original_train_sents)
@@ -150,7 +145,7 @@ def load_data(num_dev_sents, num_train_sents):
     print "Done"
 
     print "Load vectorizer"
-    dict_vectorizer = get_dict_vectorizer(train_examples + dev_examples)
+    dict_vectorizer = get_dict_vectorizer(data_path, train_examples + dev_examples)
     print "Vectorize examples"
     train_examples_vectorized = dict_vectorizer.transform(train_examples)
     dev_examples_vectorized = dict_vectorizer.transform(dev_examples)
