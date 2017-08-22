@@ -31,32 +31,6 @@ class Timer(object):
         return res
 
 
-class RandomizeByFrequencies(object):
-    def __init__(self, frequencies):
-        self._frequencies = frequencies
-        items = self._frequencies.items()
-        self._elements = [element for element, _ in items]
-        counts = [count for _, count in items]
-        self._counts_comulative = np.cumsum(counts)
-        self._total = self._counts_comulative[-1]
-        assert len(self._counts_comulative) == len(counts)
-
-    def random_element(self):
-        index = np.searchsorted(self._counts_comulative, self._total * random.random())
-        return self._elements[index]
-
-
-class SentencesGenerator(object):
-    def __init__(self, word_frequencies):
-        self._word_generator = RandomizeByFrequencies(word_frequencies)
-
-    def random_sentence(self, length=None):
-        if length is None:
-            length = random.randint(10, 30)
-        return [self._word_generator.random_element()
-                for _ in xrange(length)]
-
-
 def convert_to_sparse((x, y)):
     return scipy.sparse.csr_matrix(x, dtype=np.float64), y
 

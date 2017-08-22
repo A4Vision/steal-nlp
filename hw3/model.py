@@ -90,14 +90,14 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
     return net
 
 
-def only_load_model(num_dev_sents, num_train_sents, model_fname, hidden_layer_size):
+def only_load_model(num_dev_sents, num_train_sents, model_fname, hidden_layer_size, minimal_frequency):
     global global_timer
     global_timer.start_part("LoadingData")
     print "* Loading data."
-    dict_vectorizer, (word_count,
-                      tag_count), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels = memm.load_data(
+    dict_vectorizer, (word_count, tag_count), train_examples_vectorized,\
+    train_labels, dev_examples_vectorized, dev_labels = memm.load_data(
         DATA_PATH,
-        num_dev_sents, num_train_sents)
+        num_dev_sents, num_train_sents, minimal_frequency)
     print global_timer
 
     global_timer.start_part("CreatingModel")
@@ -151,13 +151,13 @@ def steal_by_labels(word_count, tag_count, original_model, dict_vectorizer, outp
     return net
 
 
-def examine_stealing(num_dev_sents, num_train_sents, model_fname, hidden_layer_size, data_path):
+def examine_stealing(num_dev_sents, num_train_sents, model_fname, hidden_layer_size, data_path, minimal_frequency):
     global global_timer
     global_timer.start_part("LoadingData")
     print "* Loading data."
     dict_vectorizer, (word_count,
                       tag_count), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels = memm.load_data(
-        data_path, num_dev_sents, num_train_sents)
+        data_path, num_dev_sents, num_train_sents, minimal_frequency)
     print global_timer
 
     global_timer.start_part("CreatingModel")
@@ -196,11 +196,15 @@ def compare_models(stolen_model, original_model, test_examples):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train and steal POS model.')
-    parser.add_argument("classifier_file_name", type=str)
-    parser.add_argument("--valid_size", default=123456, type=int)
-    parser.add_argument("--train_size", default=123456, type=int)
-    parser.add_argument("--hidden_size", default=0, type=int)
-    parser.add_argument("--action", choices=["train", "steal"])
+    parser.add_argument("classifier_file_name", type=str, help="File name for the original classifier.")
+    parser.add_argument("minimal_frequency", type=int, help="Minimal frequency for a word to be observed not unknown.")
+    parser.add_argument("action", choices=["train", "steal"], help="What operation to perform.\ntrain: only "
+                                                                   "train to create an original model."
+                                                                   "steal: steal a trained model.")
+    parser.add_argument("--valid_size", default=123456, type=int, help="Number of sentences in the validation set.")
+    parser.add_argument("--train_size", default=123456, type=int, help="Number of sentences in the training set.")
+    parser.add_argument("--hidden_size", default=0, type=int,
+                        help="Size of hidden layer. Number of neurons in the hidden layer for the model.")
     try:
         args = parser.parse_args(sys.argv[1:])
     except:
@@ -209,7 +213,7 @@ if __name__ == '__main__':
     assert os.path.sep not in args.classifier_file_name
     if args.action == "train":
         only_load_model(args.valid_size, args.train_size, os.path.join(DATA_PATH, args.classifier_file_name),
-                        args.hidden_size)
+                        args.hidden_size, args.minimal_frequency)
     elif args.action == "steal":
         examine_stealing(args.valid_size, args.train_size, os.path.join(DATA_PATH, args.classifier_file_name),
-                         args.hidden_size, DATA_PATH)
+                         args.hidden_size, DATA_PATH, args.minimal_frequency)

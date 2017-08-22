@@ -86,7 +86,7 @@ CRAFTED_CATEGORIES = (['wordSuffix' + x for x in SUFFIXES]
                        'lowercase', 'UNK'])
 
 
-def replace_word(word, is_first, vocab):
+def replace_word(word, is_first, vocab, minimal_fequency):
     """
         Replaces rare words with categories (numbers, dates, etc...)
     """
@@ -111,7 +111,7 @@ def replace_word(word, is_first, vocab):
         return 'allCaps'
     elif CAP_PERIOD_PATTERN.match(word):
         return 'capPeriod'
-    if is_first and vocab.get(word.lower(), 0) >= MIN_FREQ:
+    if is_first and vocab.get(word.lower(), 0) >= minimal_fequency:
         return word.lower()
     if not is_first and word[0].isupper():
         return 'initCap'
@@ -144,7 +144,7 @@ def contains_alpha(word):
     return ALPHA_PATTERN.search(word) is not None
 
 
-def preprocess_sent(vocab, sents):
+def preprocess_sent(vocab, sents, minimal_frequency=MIN_FREQ):
     """
         return a sentence, where every word that is not frequent enough is replaced
     """
@@ -154,10 +154,10 @@ def preprocess_sent(vocab, sents):
         new_sent = []
         is_first = True
         for token in sent:
-            if token[0] in vocab and vocab[token[0]] >= MIN_FREQ:
+            if token[0] in vocab and vocab[token[0]] >= minimal_frequency:
                 new_sent.append(token)
             else:
-                r = replace_word(token[0], is_first, vocab)
+                r = replace_word(token[0], is_first, vocab, minimal_frequency)
                 assert r in CRAFTED_CATEGORIES or vocab
                 new_sent.append((r, token[1]))
                 replaced += 1

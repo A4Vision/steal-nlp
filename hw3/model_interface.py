@@ -29,10 +29,9 @@ class ModelInterface(object):
         return self.predict_proba(sentence)[1]
 
     def predict_proba(self, sentence):
-        # TODO: Consider using some caching techniuqe here - in case one needs to
+        # TODO: Consider using some caching technique here - in case one needs to
         # decode a sentence's prefixes from left to right.
         assert self._sentences_filter(sentence)
-        ### YOUR CODE HERE
         tagged_sentence = [[word, ''] for word in sentence]
         all_probs = []
         for i in xrange(len(sentence)):
@@ -43,5 +42,4 @@ class ModelInterface(object):
             tag_index = np.argmax(probs)
             tagged_sentence[i][1] = memm.index_to_tag_dict[tag_index]
 
-        ### END YOUR CODE
         return all_probs, tagged_sentence

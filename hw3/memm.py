@@ -108,8 +108,8 @@ def count_word_tags(tagged_sentences):
     return words_counter, tags_counter
 
 
-def get_dict_vectorizer(data_path, examples):
-    DICT_VEC_FNAME = os.path.join(data_path, "dict_vec.pkl")
+def get_dict_vectorizer(data_path, examples, minimal_frequency):
+    DICT_VEC_FNAME = os.path.join(data_path, "dict_vec_{}.pkl".format(minimal_frequency))
     if os.path.exists(DICT_VEC_FNAME):
         vec = cPickle.load(open(DICT_VEC_FNAME, "rb"))
         return vec
@@ -121,15 +121,15 @@ def get_dict_vectorizer(data_path, examples):
         return vec
 
 
-def load_data(data_path, num_dev_sents, num_train_sents):
+def load_data(data_path, num_dev_sents, num_train_sents, minimal_frequency):
     random.seed(123)
     original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))[:num_train_sents]
     original_dev_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/dev.gold.conll"))[:num_dev_sents]
     random.shuffle(original_dev_sents)
     random.shuffle(original_train_sents)
     vocab = compute_vocab_count(original_train_sents)
-    train_sents = preprocess_sent(vocab, original_train_sents)
-    dev_sents = preprocess_sent(vocab, original_dev_sents)
+    train_sents = preprocess_sent(vocab, original_train_sents, minimal_frequency)
+    dev_sents = preprocess_sent(vocab, original_dev_sents, minimal_frequency)
 
     # The log-linear model training.
     print "Create train examples"
@@ -145,7 +145,7 @@ def load_data(data_path, num_dev_sents, num_train_sents):
     print "Done"
 
     print "Load vectorizer"
-    dict_vectorizer = get_dict_vectorizer(data_path, train_examples + dev_examples)
+    dict_vectorizer = get_dict_vectorizer(data_path, train_examples + dev_examples, minimal_frequency)
     print "Vectorize examples"
     train_examples_vectorized = dict_vectorizer.transform(train_examples)
     dev_examples_vectorized = dict_vectorizer.transform(dev_examples)
