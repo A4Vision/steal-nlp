@@ -1,5 +1,9 @@
 import numpy as np
 from hw3 import memm
+from hw3 import utils
+
+
+global_timer = utils.Timer("global_model_interface")
 
 
 class ModelInterface(object):
@@ -11,7 +15,7 @@ class ModelInterface(object):
         based on a greedy decoding.
     """
 
-    def __init__(self, model, dict_vectorizer, sentences_filter=lambda: True):
+    def __init__(self, model, dict_vectorizer, sentences_filter=lambda x: True):
         """
 
         :param model: Predicts the probability for a word to receive a certain tag,
@@ -25,6 +29,11 @@ class ModelInterface(object):
         self._dict_vectorizer = dict_vectorizer
 
     def predict(self, sentence):
+        """
+
+        :param sentence:
+        :return: tagged sentence
+        """
         assert self._sentences_filter(sentence)
         return self.predict_proba(sentence)[1]
 
@@ -35,11 +44,15 @@ class ModelInterface(object):
         tagged_sentence = [[word, ''] for word in sentence]
         all_probs = []
         for i in xrange(len(sentence)):
+            global_timer.start_part("extract_features")
             features = memm.extract_features(tagged_sentence, i)
+            global_timer.start_part("vectorize")
             vec_features = memm.vectorize_features(self._dict_vectorizer, features)
+            global_timer.start_part("predict_proba")
             probs = self._model.predict_proba(vec_features)
-            all_probs.append(probs)
+            global_timer.start_part("global")
+            all_probs.append(probs[0])
             tag_index = np.argmax(probs)
             tagged_sentence[i][1] = memm.index_to_tag_dict[tag_index]
 
-        return all_probs, tagged_sentence
+        return np.array(all_probs), tagged_sentence

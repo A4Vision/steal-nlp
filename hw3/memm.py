@@ -121,16 +121,33 @@ def get_dict_vectorizer(data_path, examples, minimal_frequency):
         return vec
 
 
-def load_data(data_path, num_dev_sents, num_train_sents, minimal_frequency):
+def load_train_dev_test_sentences(data_path, num_dev_sents, num_train_sents, minimal_frequency):
+    """
+    Returns tagged training, development and test sentences.
+    :param data_path:
+    :param num_dev_sents:
+    :param num_train_sents:
+    :param minimal_frequency:
+    :return:
+    """
     random.seed(123)
-    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))[:num_train_sents]
+    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))[
+                           :num_train_sents]
     original_dev_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/dev.gold.conll"))[:num_dev_sents]
+    original_test_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/test.gold.conll"))
     random.shuffle(original_dev_sents)
     random.shuffle(original_train_sents)
+    random.shuffle(original_test_sents)
     vocab = compute_vocab_count(original_train_sents)
     train_sents = preprocess_sent(vocab, original_train_sents, minimal_frequency)
     dev_sents = preprocess_sent(vocab, original_dev_sents, minimal_frequency)
+    test_sents = preprocess_sent(vocab, original_test_sents, minimal_frequency)
+    return train_sents, dev_sents, test_sents
 
+
+def load_data(data_path, num_dev_sents, num_train_sents, minimal_frequency):
+    train_sents, dev_sents, test_sents = load_train_dev_test_sentences(data_path, num_dev_sents,
+                                                                       num_train_sents, minimal_frequency)
     # The log-linear model training.
     print "Create train examples"
     train_examples, train_labels = create_examples(train_sents)

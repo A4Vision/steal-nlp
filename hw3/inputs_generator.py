@@ -29,6 +29,7 @@ class InputScorer(object):
 
 
 class ScoreByCheating(InputScorer):
+    # TODO: change inheritance to comparison
     def __init__(self, dict_vectorizer, local_model, real_model):
         super(ScoreByCheating, self).__init__(dict_vectorizer, local_model)
         assert isinstance(real_model, model_interface.ModelInterface)
@@ -37,7 +38,7 @@ class ScoreByCheating(InputScorer):
     def _cheat_to_get_prev_tags(self, sentence, i):
         # Instead of cheating, one could replace the rare features
         # with unknown words, to get a good approximation of the tag.
-        tagged_sentence = self._real_model.predict(sentence[:i + 1])
+        tagged_sentence = self._real_model.predict(sentence[:i + 2])
         if i > 0:
             prev_tag = tagged_sentence[i - 1][1]
         else:
@@ -50,7 +51,7 @@ class ScoreByCheating(InputScorer):
 
     def _generate_tagged_prefix(self, sentence, i):
         prevprev_tag, prev_tag = self._cheat_to_get_prev_tags(sentence, i)
-        tagged = [[word, ''] for word in sentence[:i + 1]]
+        tagged = [[word, ''] for word in sentence[:i + 2]]
         if i > 0:
             tagged[i - 1][1] = prev_tag
         if i > 1:
@@ -92,6 +93,7 @@ class ScoreSubtleDecisionByCheating(ScoreByCheating):
         :return:
         """
         probs_vec = self._probs_vec(sentence, i)
+        # TODO: Consider looking on top 3.
         a, b = utils.top_k(probs_vec, 2)
         return -abs(a - b)
 
@@ -115,10 +117,7 @@ class SelectWordsUniformly(InputScorer):
         return -self._selected_counter[word]
 
     def inform_queried_with(self, sentence):
-        # We neglect here the option for a word to appear twice in a sentence -
-        # as we don't update _selected_counter along the way
-        for word in sentence:
-            self._selected_counter[word] += 1
+        self._selected_counter.update(sentence)
 
 
 class Randomizer(object):
@@ -160,7 +159,7 @@ class RandomizeByFrequencyProportionaly(Randomizer):
         self._index_to_element = sorted(frequencies_dict.keys())
         self._element_to_index = {e: i for i, e in enumerate(self._index_to_element)}
 
-        self._frequencies_array = np.array([count for element, count in sorted(frequencies_dict.iteritems())])
+        self._frequencies_array = np.array([frequencies_dict[element] for element in self._index_to_element])
         self._frequency_sum = np.sum(self._frequencies_array)
 
         self._queried_frequencies_array = np.zeros_like(self._frequencies_array, dtype='int')
@@ -231,5 +230,24 @@ class GreedyInputsGenerator(InputGenerator):
         return sentence
 
 
+class SequentialInputsGenerator(object):
+    def __init__(self, length_generator, all_words):
+        self._all_words = sorted(set(all_words))
+        self._length_generator = length_generator
+        self._index = 0
+        self._iterations = 0
 
+    def generate_input(self):
+        length = self._length_generator.random_element()
+        sentence = self._all_words[self._index: self._index + length]
+        self._index += length
+        if self._index >= len(self._all_words):
+            random.shuffle(self._all_words)
+            self._index = 0
+            self._iterations += 1
+        self._length_generator.selected_elements([length])
+        return sentence
+
+    def iterations(self):
+        return self._iterations
 

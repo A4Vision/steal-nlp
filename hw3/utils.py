@@ -76,6 +76,18 @@ def regression_accuracy(net, data, labels):
     return acc
 
 
+def regression_kl(net, data, real_probs):
+    predicted_probs = net.predict(data)
+    return kl(predicted_probs, real_probs)
+
+
+def kl(probs1, probs2):
+    eps = 1e-8
+    t = np.clip(probs1, eps, 1 - eps)
+    kl = t * np.log(t / np.clip(probs2, eps, 1 - eps))
+    return np.abs(kl).mean()
+
+
 def top_k(l, k):
     a = np.array(l)
     top_k_indices = np.argpartition(a, -k)[-k:]
