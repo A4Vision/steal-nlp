@@ -72,7 +72,7 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
                                       valid=[validation_data, np.int32(validation_labels)],
                                       algo='sgd',
                                       learning_rate=eta,
-                                      hidden_l1=alpha):
+                                      weight_l2=alpha):
         valid_acc = np.sum(net.predict(validation_data) == np.int32(validation_labels)) / float(
             len(validation_labels))
         if valid_acc > best_validation:
@@ -142,7 +142,7 @@ def steal_by_labels(word_count, tag_count, original_model, dict_vectorizer, outp
     eta = 3.
     alpha = 1.
     for train, valid in net.itertrain([sparse_features, probs_vecs],
-                                      algo='sgd', learning_rate=eta, hidden_l1=alpha):
+                                      algo='sgd', learning_rate=eta, weight_l2=alpha):
         acc = utils.regression_accuracy(net, sparse_features, predictions)
         print 'training accuracy', acc
         validation_acc = utils.regression_accuracy(net, validation_examples, validation_predictions)

@@ -29,7 +29,7 @@ def train_mnist_example():
                               (10, 'softmax')], loss=utils.RegressionCrossEntropy(2))
 
     # 2. train the model.
-    for train, valid in net.itertrain(train_data, valid=validation_data, algo='nag', hidden_l1=0.1,
+    for train, valid in net.itertrain(train_data, valid=validation_data, algo='nag', weight_l2=0.1,
                                       learning_rate=1.):
         print('training loss:', train['loss'])
         print('most recent validation loss:', valid['loss'])

@@ -62,18 +62,18 @@ def experiment1_use_training_set_sentences(model_path, minimal_frequency, data_a
                                  loss='kl')
         current_train_vecs, current_train_probs = random_subset(train_sparse_features, train_probs_vecs, data_amount)
         eta = 20.
-        beta = 0.8
         alpha = 1.
         accuracy = 0.
-        loss_function = theano.function(net.variables, outputs=[net.loss(hidden_l1=alpha)])
+        loss_function = theano.function(net.variables, outputs=[net.loss(weight_l2=alpha)])
         prev_train_loss = 1000.
         for train, valid in net.itertrain([current_train_vecs, current_train_probs],
-                                          algo='sgd', learning_rate=eta, hidden_l1=alpha):
+                                          algo='sgd', learning_rate=eta, weight_l2=alpha):
             accuracy = utils.regression_accuracy(net, validation_sparse_features, validation_predictions)
             print 'validation accuracy', accuracy
             # TODO: calculate loss here, and some L2 distances.
             validation_kl = utils.regression_kl(net, validation_sparse_features, validation_probs_vecs)
             print 'validation kl', validation_kl
+            l2 = np.sum(net.params[0].get_value() ** 2)
             train_loss = loss_function(current_train_vecs, current_train_probs)[0]
             print 'training_loss', train_loss
 
