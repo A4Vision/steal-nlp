@@ -93,7 +93,7 @@ def experiment1_use_training_set_sentences(model_path, minimal_frequency, data_a
                 print 'Accuracy not improving, breaking'
                 break
         original_w = original_model.get_w()
-        stolen_w = net.layers[1].find('w')
+        stolen_w = net.layers[1].find('w').get_value()
         validation_kl_values.append(validation_kl)
         average_l2_distance = np.sqrt(np.sum((original_w - stolen_w) ** 2, axis=1)).mean()
         l2_distances.append(average_l2_distance)
