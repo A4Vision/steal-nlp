@@ -56,3 +56,6 @@ class ModelInterface(object):
             tagged_sentence[i][1] = memm.index_to_tag_dict[tag_index]
 
         return np.array(all_probs), tagged_sentence
+
+    def get_w(self):
+        return self._model.layers[1].find('w').get_value()

@@ -12,7 +12,6 @@ from hw3 import model_interface
 
 
 def experiment1_generate_training_examples(dict_vectorizer, wrongly_tagged_sentences, original_model):
-
     list_of_all_probs = []
     tagged_train_sents = []
 
@@ -53,32 +52,53 @@ def experiment1_use_training_set_sentences(model_path, minimal_frequency, data_a
     input_size = train_sparse_features.shape[1]
     print "input_size", input_size
     accuracies = []
+    l2_distances = []
+    validation_kl_values = []
     output_size = train_probs_vecs.shape[1]
     for data_amount in data_amounts:
+        print 'data amount=', data_amount
         layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), (output_size, 'softmax')]
 
         net = theanets.Regressor(layers,
-                                 # KL Divergence - Empirically, turns out to give better results than corss entropy.
+                                 # KL Divergence - Empirically, turns out to give better results than cross entropy.
                                  loss='kl')
         current_train_vecs, current_train_probs = random_subset(train_sparse_features, train_probs_vecs, data_amount)
-        eta = 20.
+        eta = 1.
         alpha = 1.
         accuracy = 0.
         loss_function = theano.function(net.variables, outputs=[net.loss(weight_l2=alpha)])
-        prev_train_loss = 1000.
+        training_losses = []
+        current_accuracies = []
+        i = 0
         for train, valid in net.itertrain([current_train_vecs, current_train_probs],
                                           algo='sgd', learning_rate=eta, weight_l2=alpha):
+            i += 1
             accuracy = utils.regression_accuracy(net, validation_sparse_features, validation_predictions)
             print 'validation accuracy', accuracy
             # TODO: calculate loss here, and some L2 distances.
             validation_kl = utils.regression_kl(net, validation_sparse_features, validation_probs_vecs)
             print 'validation kl', validation_kl
-            l2 = np.sum(net.params[0].get_value() ** 2)
             train_loss = loss_function(current_train_vecs, current_train_probs)[0]
             print 'training_loss', train_loss
-
+            training_losses.append(train_loss)
+            current_accuracies.append(accuracy)
+            recent_accuracies = np.average(current_accuracies[-5:])
+            less_recent_accuracies = np.average(current_accuracies[-10:])
+            if i > 10 and less_recent_accuracies > recent_accuracies:
+                print 'Accuracy not improving, breaking'
+                break
+        original_w = original_model.get_w()
+        stolen_w = net.layers[1].find('w')
+        validation_kl_values.append(validation_kl)
+        average_l2_distance = np.sqrt(np.sum((original_w - stolen_w) ** 2, axis=1)).mean()
+        l2_distances.append(average_l2_distance)
         accuracies.append(accuracy)
+        print 'current training loses'
+        print training_losses
     print accuracies
+    print l2_distances
+    print validation_kl_values
+
 
 
 def main():
