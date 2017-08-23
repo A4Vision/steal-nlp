@@ -89,7 +89,7 @@ def experiment1_use_training_set_sentences(model_path, minimal_frequency, data_a
             current_accuracies.append(accuracy)
             recent_training = np.average(training_losses[-40:])
             less_recent_training = np.average(training_losses[-20:])
-            if i > 10 and less_recent_training - 1e-5 < recent_training:
+            if i > 40 and less_recent_training - 1e-5 < recent_training:
                 print 'Loss not improving, breaking'
                 break
         original_w = original_model.get_w()
