@@ -1,6 +1,5 @@
 import os
 import argparse
-import random
 import theano
 import sys
 import theanets
@@ -9,6 +8,10 @@ from hw3 import memm
 from hw3 import model
 from hw3 import utils
 from hw3 import model_interface
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
+DATA_PATH = os.path.join(BASE_DIR, "data")
+sys.path.insert(0, ROOT_DIR)
 
 
 def experiment1_generate_training_examples(dict_vectorizer, wrongly_tagged_sentences, original_model):
