@@ -87,10 +87,10 @@ def experiment1_use_training_set_sentences(model_path, minimal_frequency, data_a
             print 'training_loss', train_loss
             training_losses.append(train_loss)
             current_accuracies.append(accuracy)
-            recent_accuracies = np.average(current_accuracies[-5:])
-            less_recent_accuracies = np.average(current_accuracies[-10:])
-            if i > 10 and less_recent_accuracies > recent_accuracies:
-                print 'Accuracy not improving, breaking'
+            recent_training = np.average(training_losses[-40:])
+            less_recent_training = np.average(training_losses[-20:])
+            if i > 10 and less_recent_training - 1e-5 < recent_training:
+                print 'Loss not improving, breaking'
                 break
         original_w = original_model.get_w()
         stolen_w = net.layers[1].find('w').get_value()
@@ -98,10 +98,13 @@ def experiment1_use_training_set_sentences(model_path, minimal_frequency, data_a
         average_l2_distance = np.sqrt(np.sum((original_w - stolen_w) ** 2, axis=1)).mean()
         l2_distances.append(average_l2_distance)
         accuracies.append(accuracy)
-        print 'current training loses'
+        print 'current training losses'
         print training_losses
+    print 'accuracies'
     print accuracies
+    print 'l2 distances'
     print l2_distances
+    print 'validation KL'
     print validation_kl_values
 
 
