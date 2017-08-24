@@ -34,4 +34,14 @@ class TestRandomizeByFrequencies(unittest.TestCase):
                 freq_ratio = freq[x] / float(sum(freq.values()))
                 self.assertLessEqual(ratio, freq_ratio * RATIO)
 
-
+    def test_subset_inputs_generator(self):
+        s = ['a', 'b', 'c']
+        generated = []
+        generator = inputs_generator.SubsetInputsGenerator(s)
+        for i in xrange(3):
+            generated.append(generator.generate_input())
+            if i in (0, 1):
+                self.assertEqual(generator.iterations(), 0)
+        self.assertListEqual(sorted(generated), s)
+        generator.generate_input()
+        self.assertEqual(generator.iterations(), 1)

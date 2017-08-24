@@ -172,3 +172,6 @@ def load_data(data_path, num_dev_sents, num_train_sents, minimal_frequency):
 
     return dict_vectorizer, count_word_tags(train_sents), train_examples_vectorized, train_labels, dev_examples_vectorized, dev_labels
 
+
+def untag_sentence(tagged_sentence):
+    return [w for w, t in tagged_sentence]

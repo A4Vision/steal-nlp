@@ -1,7 +1,7 @@
 import collections
 import os
 import argparse
-import theano
+import scipy.sparse
 import sys
 import theanets
 import numpy as np
@@ -12,6 +12,7 @@ DATA_PATH = os.path.join(BASE_DIR, "data")
 sys.path.insert(0, ROOT_DIR)
 
 from hw3 import memm
+from hw3 import inputs_generator
 from hw3 import model
 from hw3 import utils
 from hw3 import model_interface
@@ -55,7 +56,9 @@ def transform_input_for_training(dict_vectorizer, probs_vecs_list, tagged_senten
     return probs, sparse_features, validation_predictions
 
 
-def experiment1_use_training_set_sentences(model_path, stolen_model_fname, minimal_frequency, word_queries_amounts):
+def experiment_use_training_set_sentences(model_path, stolen_model_fname, minimal_frequency, batches_sizes,
+                                          maximal_queries_amount, sentences_generator):
+    assert isinstance(sentences_generator, inputs_generator.InputGenerator)
     assert ".pkl" not in stolen_model_fname
     dict_vectorizer = memm.get_dict_vectorizer(model.DATA_PATH, None, minimal_frequency)
     original_model = model_interface.ModelInterface(theanets.Classifier.load(model_path), dict_vectorizer)
@@ -64,12 +67,6 @@ def experiment1_use_training_set_sentences(model_path, stolen_model_fname, minim
     print "Loading data"
     train_sents, dev_sents, test_sents = memm.load_train_dev_test_sentences(model.DATA_PATH, minimal_frequency)
 
-    words_per_sentence = np.average(map(len, train_sents))
-    print "generating sparse features examples - training"
-    sentences_amount = int(max(word_queries_amounts) / words_per_sentence + 10)
-    print sentences_amount
-    train_list_of_all_probs, tagged_train_sents = experiment1_generate_training_examples(train_sents[:sentences_amount],
-                                                                                         original_model)
     print "generating sparse features examples - validation"
     validation_list_of_all_probs, tagged_validation_sents = experiment1_generate_training_examples(dev_sents[:200],
                                                                                                    original_model)
@@ -84,56 +81,76 @@ def experiment1_use_training_set_sentences(model_path, stolen_model_fname, minim
     validation_kl_values = []
     output_size = validation_probs.shape[1]
 
-    for single_word_queries_amount in word_queries_amounts:
-        print 'queries amount=', single_word_queries_amount
-        sentences_queries_amount = int(single_word_queries_amount / words_per_sentence)
-        layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), (output_size, 'softmax')]
+    layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), (output_size, 'softmax')]
 
-        net = theanets.Regressor(layers,
-                                 # KL Divergence - Empirically, turns out to give better results than cross entropy.
-                                 loss='kl')
-        current_train_probs_list, current_train_sents = random_subset(np.array(train_list_of_all_probs),
-                                                                      tagged_train_sents,
-                                                                      sentences_queries_amount)
-        words_trained_amount = len(count_words(current_train_sents))
-        print 'words_trained_amount', words_trained_amount
+    net = theanets.Regressor(layers,
+                             # KL Divergence - Empirically, turns out to give better results than cross entropy.
+                             loss='kl')
 
-        current_train_probs, current_train_sparse_features, _ = \
-            transform_input_for_training(dict_vectorizer, current_train_probs_list, current_train_sents)
+    learning_rate = 6.
+    alpha = 1.
+    accuracy = 0.
+    all_words_queried = set()
+    training_losses = []
+    accuracies = []
+    all_probs = []
+    all_sparse_features = []
+    queries_amounts = []
+    unique_words_amounts = []
+    single_word_queries_amount = 0
+    for batch_size in batches_sizes:
+        if single_word_queries_amount >= maximal_queries_amount:
+            break
+        new_sentences = [sentences_generator.generate_input() for _ in xrange(batch_size)]
+        for s in new_sentences:
+            all_words_queried.update(s)
+            single_word_queries_amount += len(s)
 
-        learning_rate = 6.
-        alpha = 1.
-        accuracy = 0.
-        loss_function = theano.function(net.variables, outputs=[net.loss(weight_l2=alpha)])
-        training_losses = []
-        current_accuracies = []
+        new_probs = []
+        new_tagged_sentences = []
+        for sentence in new_sentences:
+            sent_probs, tagged_sentence = original_model.predict_proba(sentence)
+            new_probs.append(sent_probs)
+            new_tagged_sentences.append(tagged_sentence)
+        new_probs, new_sparse_features, _ = transform_input_for_training(dict_vectorizer, new_probs,
+                                                                         new_tagged_sentences)
+        all_probs.append(new_probs)
+        all_sparse_features.append(new_sparse_features)
         i = 0
-        for train, valid in net.itertrain([current_train_sparse_features, current_train_probs],
-                                           algo='sgd', learning_rate=learning_rate, weight_l2=alpha):
+
+        for train, valid in net.itertrain([scipy.sparse.vstack(all_sparse_features, format='csr'),
+                                           np.concatenate(all_probs)],
+                                          algo='sgd', learning_rate=learning_rate, weight_l2=alpha):
             i += 1
             accuracy = utils.regression_accuracy(net, validation_sparse_features, validation_predictions).item()
             print 'validation accuracy', accuracy
             # TODO: calculate loss here, and some L2 distances.
             validation_kl = utils.regression_kl(net, validation_sparse_features, validation_probs)
             print 'validation kl', validation_kl
-            train_loss = loss_function(current_train_sparse_features, current_train_probs)[0].item()
-            print 'training_loss', train_loss
-            training_losses.append(train_loss)
-            current_accuracies.append(accuracy)
+            print 'training_loss', train['loss']
+            training_losses.append(train['loss'])
             less_recent_training = np.average(training_losses[-40:])
             recent_training = np.average(training_losses[-20:])
             if i > 40 and less_recent_training - 1e-4 < recent_training:
                 print 'Loss not improving, breaking'
                 break
+
         original_w = original_model.get_w()
         stolen_w = net.layers[1].find('w').get_value()
-        validation_kl_values.append(validation_kl)
         average_l2_distance = np.sqrt(np.sum((original_w - stolen_w) ** 2, axis=1)).mean()
+        validation_kl_values.append(validation_kl)
         l2_distances.append(average_l2_distance)
         accuracies.append(accuracy)
+        unique_words_amounts.append(len(all_words_queried))
+        queries_amounts.append(single_word_queries_amount)
         print 'current training losses'
         print training_losses
         net.save(os.path.join(DATA_PATH, "{}_queries{}.pkl".format(stolen_model_fname, single_word_queries_amount)))
+
+    print 'unique_words_amounts'
+    print unique_words_amounts
+    print 'Single word queries amounts'
+    print queries_amounts
     print 'accuracies'
     print accuracies
     print 'l2 distances'
@@ -144,11 +161,13 @@ def experiment1_use_training_set_sentences(model_path, stolen_model_fname, minim
 
 def main():
     parser = argparse.ArgumentParser(description='Train and steal POS model.')
-    parser.add_argument("classifier_file_name", type=str, help="File name for the original classifier.")
-    parser.add_argument("minimal_frequency", type=int, help="Minimal frequency for a word to be observed not unknown.")
-    parser.add_argument("experiment_number", choices=[1, 2, 3, 4], type=int, help="What experiment to run")
-    parser.add_argument("--data_amounts", nargs="+", help="Amounts of data for experiment.", required=True)
-    parser.add_argument("--stolen_fname", required=True, help="File name prefix for the stolen models.")
+    parser.add_argument("--classifier_file_name", type=str, help="File name for the original classifier.", required=True)
+    parser.add_argument("--minimal_frequency", type=int, help="Minimal frequency for a word to be observed not unknown.", required=True)
+    parser.add_argument("--experiment_number", choices=[1, 2, 3, 4], type=int, help="What experiment to run", required=True)
+    parser.add_argument("--stolen_fname", help="File name prefix for the stolen models.", required=True, type=str)
+    parser.add_argument("--maximal_queries", help="Amounts of data for experiment.", required=True, type=int)
+    parser.add_argument("--batch_size", help="Amounts of data for experiment.", required=True, type=int)
+    parser.add_argument("--first_batch_size", help="Amounts of queries for first batch.", required=True, type=int)
     try:
         args = parser.parse_args(sys.argv[1:])
     except:
@@ -158,9 +177,19 @@ def main():
     model_path = os.path.join(model.DATA_PATH, args.classifier_file_name)
     assert os.path.exists(model_path)
 
+    # Pre-process arguments
+    batches_sizes = [args.first_batch_size] + [args.batch_size] * int(args.maximal_queries)
+
     if args.experiment_number == 1:
-        experiment1_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, map(int, args.data_amounts))
+        train_sents, _, _ = memm.load_train_dev_test_sentences(model.DATA_PATH, args.minimal_frequency)
+        untagged_train_sentences = map(memm.untag_sentence, train_sents)
+        generator = inputs_generator.SubsetInputsGenerator(untagged_train_sentences)
 
+        experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
+                                              args.maximal_queries, generator)
+    elif args.experiment_number == 2:
+        pass
 
+# python hw3/full_information_experiments.py --classifier_file_name classifier_train_all_freq20.pkl --minimal_frequency 20 --experiment_number 1 --stolen_fname stolen20_test --maximal_queries 10000 --first_batch_size 200 --batch_size 200
 if __name__ == '__main__':
     main()

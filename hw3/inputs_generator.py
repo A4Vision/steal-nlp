@@ -230,7 +230,7 @@ class GreedyInputsGenerator(InputGenerator):
         return sentence
 
 
-class SequentialInputsGenerator(object):
+class SequentialInputsGenerator(InputGenerator):
     def __init__(self, length_generator, all_words):
         self._all_words = sorted(set(all_words))
         self._length_generator = length_generator
@@ -247,6 +247,26 @@ class SequentialInputsGenerator(object):
             self._iterations += 1
         self._length_generator.selected_elements([length])
         return sentence
+
+    def iterations(self):
+        return self._iterations
+
+
+class SubsetInputsGenerator(InputGenerator):
+    def __init__(self, sentences):
+        self._sentences = list(sentences)
+        assert len(self._sentences) > 0
+        random.shuffle(self._sentences)
+        self._index = 0
+        self._iterations = 0
+
+    def generate_input(self):
+        res = self._sentences[self._index]
+        self._index += 1
+        if self._index == len(self._sentences):
+            self._index = 0
+            self._iterations += 1
+        return res
 
     def iterations(self):
         return self._iterations
