@@ -11,7 +11,6 @@ import collections
 
 class InputScorer(object):
     def __init__(self, dict_vectorizer, local_model):
-        assert isinstance(local_model, theanets.Regressor)
         self._local_model = local_model
         self._dict_vectorizer = dict_vectorizer
 
