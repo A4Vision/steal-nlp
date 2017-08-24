@@ -131,9 +131,7 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
             print 'validation kl', validation_kl
             print 'training_loss', train['loss']
             training_losses.append(train['loss'])
-            less_recent_training = np.average(training_losses[-40:])
-            recent_training = np.average(training_losses[-20:])
-            if i > 40 and less_recent_training - 1e-4 < recent_training:
+            if i == 2000:
                 print 'Loss not improving, breaking'
                 break
 
