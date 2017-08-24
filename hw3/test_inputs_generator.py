@@ -6,7 +6,7 @@ from hw3 import inputs_generator
 class TestRandomizeByFrequencies(unittest.TestCase):
     def test_randomize(self):
         freq = collections.Counter(['a', 'b', 'b'])
-        randomizer = inputs_generator.RandomizeByFrequenciesIID(freq)
+        randomizer = inputs_generator.RandomizeByFrequenciesIIDFromArray(freq)
         elements = [randomizer.random_element() for i in xrange(2 ** 14)]
         randomizer.selected_elements(elements)  # Practically not required, here for completeness
         c = collections.Counter(elements)

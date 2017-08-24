@@ -76,9 +76,12 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
 
     input_size = validation_sparse_features.shape[1]
     print "input_size", input_size
-    accuracies = []
     l2_distances = []
     validation_kl_values = []
+    queries_amounts = []
+    unique_words_amounts = []
+    iterations = []
+    accuracies = []
     output_size = validation_probs.shape[1]
 
     layers = [theanets.layers.base.Input(size=input_size, sparse='csr'), (output_size, 'softmax')]
@@ -91,12 +94,10 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
     alpha = 1.
     accuracy = 0.
     all_words_queried = set()
-    training_losses = []
-    accuracies = []
+
     all_probs = []
     all_sparse_features = []
-    queries_amounts = []
-    unique_words_amounts = []
+
     single_word_queries_amount = 0
     for batch_size in batches_sizes:
         if single_word_queries_amount >= maximal_queries_amount:
@@ -116,6 +117,7 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
                                                                          new_tagged_sentences)
         all_probs.append(new_probs)
         all_sparse_features.append(new_sparse_features)
+        training_losses = []
         i = 0
 
         for train, valid in net.itertrain([scipy.sparse.vstack(all_sparse_features, format='csr'),
@@ -143,6 +145,7 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
         accuracies.append(accuracy)
         unique_words_amounts.append(len(all_words_queried))
         queries_amounts.append(single_word_queries_amount)
+        iterations.append(sentences_generator.iterations())
         print 'current training losses'
         print training_losses
         net.save(os.path.join(DATA_PATH, "{}_queries{}.pkl".format(stolen_model_fname, single_word_queries_amount)))
@@ -157,6 +160,10 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
     print l2_distances
     print 'validation KL'
     print validation_kl_values
+    print 'iterations'
+    print iterations
+    print 'W shape:'
+    print original_w.shape
 
 
 def main():
@@ -179,17 +186,30 @@ def main():
 
     # Pre-process arguments
     batches_sizes = [args.first_batch_size] + [args.batch_size] * int(args.maximal_queries)
+    train_sents, _, _ = memm.load_train_dev_test_sentences(model.DATA_PATH, args.minimal_frequency)
+    words_freq = count_words(train_sents)
 
     if args.experiment_number == 1:
-        train_sents, _, _ = memm.load_train_dev_test_sentences(model.DATA_PATH, args.minimal_frequency)
         untagged_train_sentences = map(memm.untag_sentence, train_sents)
         generator = inputs_generator.SubsetInputsGenerator(untagged_train_sentences)
 
         experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
                                               args.maximal_queries, generator)
     elif args.experiment_number == 2:
-        pass
+        length = inputs_generator.constant_generator(20)
+        generator = inputs_generator.SequentialInputsGenerator(length, set(words_freq.keys()))
+        experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
+                                              args.maximal_queries, generator)
+    elif args.experiment_number == 3:
+        length = inputs_generator.constant_generator(20)
+        words_randomizer = inputs_generator.RandomizeByFrequenciesIIDFromDict({w: 1 for w in words_freq})
+        generator = inputs_generator.GreedyInputsGenerator(length, words_randomizer,
+                                                           inputs_generator.TrivialInputScorer(), 1)
+        experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
+                                              args.maximal_queries, generator)
 
-# python hw3/full_information_experiments.py --classifier_file_name classifier_train_all_freq20.pkl --minimal_frequency 20 --experiment_number 1 --stolen_fname stolen20_test --maximal_queries 10000 --first_batch_size 200 --batch_size 200
+
 if __name__ == '__main__':
     main()
+
+# python hw3/full_information_experiments.py --classifier_file_name classifier_train_all_freq20.pkl --minimal_frequency 20 --experiment_number 1 --stolen_fname stolen20_test --maximal_queries 10000 --first_batch_size 200 --batch_size 200

@@ -28,6 +28,17 @@ class InputScorer(object):
         raise NotImplementedError
 
 
+class TrivialInputScorer(InputScorer):
+    def __init__(self):
+        super(TrivialInputScorer, self).__init__(None, None)
+
+    def score(self, sentence, i):
+        return 0
+
+    def inform_queried_with(self, sentence):
+        pass
+
+
 class ScoreByCheating(InputScorer):
     # TODO: change inheritance to comparison
     def __init__(self, dict_vectorizer, local_model, real_model):
@@ -133,7 +144,7 @@ class Randomizer(object):
         raise NotImplementedError
 
 
-class RandomizeByFrequenciesIID(Randomizer):
+class RandomizeByFrequenciesIIDFromArray(Randomizer):
     def __init__(self, frequencies_array):
         assert isinstance(frequencies_array, np.ndarray)
         self._counts_comulative = np.cumsum(frequencies_array)
@@ -141,6 +152,22 @@ class RandomizeByFrequenciesIID(Randomizer):
 
     def random_element(self):
         return np.searchsorted(self._counts_comulative, self._total * random.random())
+
+    def selected_elements(self, elements):
+        pass
+
+
+class RandomizeByFrequenciesIIDFromDict(object):
+    def __init__(self, frequencies_dict):
+        self._index_to_element = sorted(frequencies_dict.keys())
+        self._element_to_index = {e: i for i, e in enumerate(self._index_to_element)}
+
+        frequencies_array = np.array([frequencies_dict[element] for element in self._index_to_element])
+
+        self._randomizer = RandomizeByFrequenciesIIDFromArray(frequencies_array)
+
+    def random_element(self):
+        return self._index_to_element[self._randomizer.random_element()]
 
     def selected_elements(self, elements):
         pass
@@ -167,7 +194,7 @@ class RandomizeByFrequencyProportionaly(Randomizer):
 
         self._max_ratio = max_ratio
 
-        self._randomizer = RandomizeByFrequenciesIID(self._frequencies_array)
+        self._randomizer = RandomizeByFrequenciesIIDFromArray(self._frequencies_array)
 
     def random_element(self):
         return self._index_to_element[self._randomizer.random_element()]
@@ -187,7 +214,7 @@ class RandomizeByFrequencyProportionaly(Randomizer):
         # Ignore negatives and division by zero errors.
         residual[np.isnan(residual)] = 0.
         residual = np.max((residual, np.zeros_like(residual)), axis=0)
-        self._randomizer = RandomizeByFrequenciesIID(residual)
+        self._randomizer = RandomizeByFrequenciesIIDFromArray(residual)
 
 
 def dict_argmax(d):
@@ -196,6 +223,9 @@ def dict_argmax(d):
 
 class InputGenerator(object):
     def generate_input(self):
+        raise NotImplementedError
+
+    def iterations(self):
         raise NotImplementedError
 
 
@@ -228,6 +258,9 @@ class GreedyInputsGenerator(InputGenerator):
         self._scorer.inform_queried_with(sentence)
         self._length_randomizer.selected_elements([length])
         return sentence
+
+    def iterations(self):
+        return 0
 
 
 class SequentialInputsGenerator(InputGenerator):
@@ -271,3 +304,6 @@ class SubsetInputsGenerator(InputGenerator):
     def iterations(self):
         return self._iterations
 
+
+def constant_generator(element):
+    return RandomizeByFrequenciesIIDFromDict({element: 1})
