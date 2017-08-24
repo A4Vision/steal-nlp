@@ -121,7 +121,7 @@ def get_dict_vectorizer(data_path, examples, minimal_frequency):
         return vec
 
 
-def load_train_dev_test_sentences(data_path, num_dev_sents, num_train_sents, minimal_frequency):
+def load_train_dev_test_sentences(data_path, minimal_frequency, num_dev_sents=None, num_train_sents=None):
     """
     Returns tagged training, development and test sentences.
     :param data_path:
@@ -131,9 +131,12 @@ def load_train_dev_test_sentences(data_path, num_dev_sents, num_train_sents, min
     :return:
     """
     random.seed(123)
-    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))[
-                           :num_train_sents]
-    original_dev_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/dev.gold.conll"))[:num_dev_sents]
+    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))
+    if num_train_sents is not None:
+        original_train_sents = original_train_sents[:num_train_sents]
+    original_dev_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/dev.gold.conll"))
+    if num_dev_sents is not None:
+        original_dev_sents = original_dev_sents[:num_dev_sents]
     original_test_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/test.gold.conll"))
     random.shuffle(original_dev_sents)
     random.shuffle(original_train_sents)
@@ -146,8 +149,8 @@ def load_train_dev_test_sentences(data_path, num_dev_sents, num_train_sents, min
 
 
 def load_data(data_path, num_dev_sents, num_train_sents, minimal_frequency):
-    train_sents, dev_sents, test_sents = load_train_dev_test_sentences(data_path, num_dev_sents,
-                                                                       num_train_sents, minimal_frequency)
+    train_sents, dev_sents, test_sents = load_train_dev_test_sentences(data_path, minimal_frequency,
+                                                                       num_dev_sents, num_train_sents)
     # The log-linear model training.
     print "Create train examples"
     train_examples, train_labels = create_examples(train_sents)
