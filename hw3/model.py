@@ -72,7 +72,7 @@ def get_model(train_data, train_labels, validation_data, validation_labels, mode
                                       valid=[validation_data, np.int32(validation_labels)],
                                       algo='sgd',
                                       learning_rate=eta,
-                                      weight_l2=alpha):
+                                      hidden_l1=alpha):
         valid_acc = np.sum(net.predict(validation_data) == np.int32(validation_labels)) / float(
             len(validation_labels))
         if valid_acc > best_validation:
