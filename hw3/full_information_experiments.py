@@ -5,6 +5,7 @@ import scipy.sparse
 import sys
 import theanets
 import numpy as np
+import time
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
@@ -57,7 +58,7 @@ def transform_input_for_training(dict_vectorizer, probs_vecs_list, tagged_senten
 
 
 def experiment_use_training_set_sentences(model_path, stolen_model_fname, minimal_frequency, batches_sizes,
-                                          maximal_queries_amount, sentences_generator):
+                                          maximal_queries_amount, sentences_generator, optimization_time):
     assert isinstance(sentences_generator, inputs_generator.InputGenerator)
     assert ".pkl" not in stolen_model_fname
     dict_vectorizer = memm.get_dict_vectorizer(model.DATA_PATH, None, minimal_frequency)
@@ -118,12 +119,11 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
         all_probs.append(new_probs)
         all_sparse_features.append(new_sparse_features)
         training_losses = []
-        i = 0
+        start_time = time.time()
 
         for train, valid in net.itertrain([scipy.sparse.vstack(all_sparse_features, format='csr'),
                                            np.concatenate(all_probs)],
                                           algo='sgd', learning_rate=learning_rate, weight_l2=alpha):
-            i += 1
             accuracy = utils.regression_accuracy(net, validation_sparse_features, validation_predictions).item()
             print 'validation accuracy', accuracy
             # TODO: calculate loss here, and some L2 distances.
@@ -131,8 +131,8 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
             print 'validation kl', validation_kl
             print 'training_loss', train['loss']
             training_losses.append(train['loss'])
-            if i == 2000:
-                print 'Loss not improving, breaking'
+            if time.time() - start_time > optimization_time:
+                print 'Optimization time elapsed, breaking'
                 break
 
         original_w = original_model.get_w()
@@ -173,6 +173,7 @@ def main():
     parser.add_argument("--maximal_queries", help="Amounts of data for experiment.", required=True, type=int)
     parser.add_argument("--batch_size", help="Amounts of data for experiment.", required=True, type=int)
     parser.add_argument("--first_batch_size", help="Amounts of queries for first batch.", required=True, type=int)
+    parser.add_argument("--search_minutes", help="Maximal minutes per search.", required=True, type=int)
     try:
         args = parser.parse_args(sys.argv[1:])
     except:
@@ -192,19 +193,19 @@ def main():
         generator = inputs_generator.SubsetInputsGenerator(untagged_train_sentences)
 
         experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
-                                              args.maximal_queries, generator)
+                                              args.maximal_queries, generator, args.search_minutes * 60)
     elif args.experiment_number == 2:
         length = inputs_generator.constant_generator(20)
         generator = inputs_generator.SequentialInputsGenerator(length, set(words_freq.keys()))
         experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
-                                              args.maximal_queries, generator)
+                                              args.maximal_queries, generator, args.search_minutes * 60)
     elif args.experiment_number == 3:
         length = inputs_generator.constant_generator(20)
         words_randomizer = inputs_generator.RandomizeByFrequenciesIIDFromDict({w: 1 for w in words_freq})
         generator = inputs_generator.GreedyInputsGenerator(length, words_randomizer,
                                                            inputs_generator.TrivialInputScorer(), 1)
         experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,
-                                              args.maximal_queries, generator)
+                                              args.maximal_queries, generator, args.search_minutes * 60)
 
 
 if __name__ == '__main__':
