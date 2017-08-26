@@ -202,6 +202,7 @@ def main():
     elif args.experiment_number == 3:
         length = inputs_generator.constant_generator(20)
         words_randomizer = inputs_generator.RandomizeByFrequenciesIIDFromDict({w: 1 for w in words_freq})
+
         generator = inputs_generator.GreedyInputsGenerator(length, words_randomizer,
                                                            inputs_generator.TrivialInputScorer(), 1)
         experiment_use_training_set_sentences(model_path, args.stolen_fname, args.minimal_frequency, batches_sizes,

@@ -156,7 +156,7 @@ class RandomizeByFrequenciesIIDFromArray(Randomizer):
         pass
 
 
-class RandomizeByFrequenciesIIDFromDict(object):
+class RandomizeByFrequenciesIIDFromDict(Randomizer):
     def __init__(self, frequencies_dict):
         self._index_to_element = sorted(frequencies_dict.keys())
         self._element_to_index = {e: i for i, e in enumerate(self._index_to_element)}
