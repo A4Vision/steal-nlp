@@ -1,3 +1,4 @@
+import sys
 import time
 from collections import Counter
 import numpy as np
@@ -8,11 +9,13 @@ from hw3 import model_interface
 from hw3 import memm
 from hw3 import full_information_experiments
 import os
+import argparse
 np.random.seed(123)
 random.seed(123)
-
-num_words = 50
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--num_words", type=int, required=True)
+parser.add_argument("--num_queries", type=int, required=True)
+args = parser.parse_args(sys.argv[1:])
 
 train, dev, test = memm.load_train_dev_test_sentences("hw3/data", 20)
 c = theanets.Classifier.load(os.path.expanduser("~/Downloads/all_freq20.pkl"))
@@ -41,11 +44,11 @@ c.params[1].set_value(b_new)
 dict_vectorizer = memm.get_dict_vectorizer("hw3/data/", None, 20)
 interface = model_interface.ModelInterface(c, dict_vectorizer)
 count = full_information_experiments.count_words(test)
-words = random.sample([x for x in count if 3 < count[x] < 5], num_words)
+words = sorted(count.keys(), key=lambda w: -count[w])[:args.num_words]
 print 'len(words)', len(words)
 gen = inputs_generator.SequentialInputsGenerator(inputs_generator.constant_generator(25), words)
 print 'gnerating sentences'
-dense_sentences = [gen.generate_input() for _ in xrange(1000)]
+dense_sentences = [gen.generate_input() for _ in xrange(args.num_queries / 25)]
 probs = []
 tagged = []
 print 'quering'
