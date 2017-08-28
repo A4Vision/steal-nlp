@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--num_words", type=int, required=True)
 parser.add_argument("--num_queries", type=int, required=True)
 args = parser.parse_args(sys.argv[1:])
-
+print ' '.join(sys.argv)
 train, dev, test = memm.load_train_dev_test_sentences("hw3/data", 20)
 c = theanets.Classifier.load(os.path.expanduser("~/Downloads/all_freq20.pkl"))
 
