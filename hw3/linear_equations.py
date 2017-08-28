@@ -47,7 +47,7 @@ c.params[1].set_value(b_new)
 
 dict_vectorizer = memm.get_dict_vectorizer("hw3/data/", None, 20)
 interface = model_interface.ModelInterface(c, dict_vectorizer)
-count = full_information_experiments.count_words(test)
+count = full_information_experiments.count_words(train)
 words = sorted(count.keys(), key=lambda w: -count[w])[:args.num_words]
 print 'len(words)', len(words)
 gen = inputs_generator.SequentialInputsGenerator(inputs_generator.constant_generator(25), words)
@@ -60,6 +60,11 @@ for s in dense_sentences:
     p, t = interface.predict_proba(s)
     tagged.append(t)
     probs.append(p)
+
+
+def count_good_queries(sentence, words):
+    in_array = np.array([True, True] + [(word in words) for word in sentence] + [True])
+    return np.sum(in_array[:-3] & in_array[1:-2] & in_array[2:-1] & in_array[3:])
 
 print 'transform data'
 probs, sparse, predictions = full_information_experiments.transform_input_for_training(dict_vectorizer, probs, tagged)
@@ -202,7 +207,7 @@ def cut_feature(x):
         return x
 z = np.zeros(len(dict_vectorizer.vocabulary_))
 good_i = [d[i].nonzero()[0][0] for i in xrange(rank) if len(d[i].nonzero()[0]) == 1]
-print 'nonzero per row count', Counter(Counter(d.nonzero()[0]).values())
+print 'nonzero per row count', Counter(Counter(lhs.nonzero()[0]).values())
 z[[all_i_sorted[x] for x in good_i]] = 1.
 good_features = dict_vectorizer.inverse_transform([z])[0].keys()
 print 'good features count'
@@ -221,6 +226,9 @@ assert abs(np.dot(lhs, zs) - rhs[:rank, :]).max() < 1e-7
 # Validating z_i are all solution to the equations: {dense_matrix * x = B}
 assert np.average(abs(np.dot(dense_matrix, zs) - B)) < 1e-10
 assert np.max(abs(np.dot(dense_matrix, zs) - B)) < 1e-10
+
+
+
 
 n = zs.shape[1] + 1
 w_stolen = np.zeros(shape=(n, zs.shape[0]), dtype=np.float64)
@@ -257,3 +265,49 @@ print 'Correct w columns:'
 print nz
 print 'W columns that could be deduced from equations:'
 print good_i
+
+print 'building stolen classifier'
+layers = [theanets.layers.base.Input(size=w_real.shape[0], sparse='csr'), w_real.shape[1]]
+net = theanets.Classifier(layers, loss='xe')
+b_stolen = w_stolen.T[-1]
+w = np.zeros_like(w_real)
+for number, i in enumerate(all_i_sorted):
+    w[i] = w_stolen.T[number]
+net.params[1].set_value(b_stolen)
+net.params[0].set_value(w)
+
+assert np.abs(net.predict_proba(sparse) - probs).max() < 1e-8
+
+
+def untag_sentence(tagged):
+    return [w for w, t in tagged]
+
+
+from hw3 import data
+from hw3 import memm
+test_raw_tagged_incorrect = data.read_conll_pos_file(os.path.join(DATA_PATH, "Penn_Treebank/test.gold.conll"))
+test_raw_real_preprocess = map(untag_sentence, data.preprocess_sent(count, test_raw_tagged_incorrect, 20))
+tmp_vocab = {w: 1 for w in words}
+test_raw_my_preprocess = map(untag_sentence, data.preprocess_sent(tmp_vocab, test_raw_tagged_incorrect, 1))
+
+test_probs = []
+test_tagged = []
+test_tagged_my_preprocess = []
+print 'quering'
+for s_real_preprocess, s_my_preprocess in zip(test_raw_real_preprocess, test_raw_my_preprocess):
+    p, tagged = interface.predict_proba(s_real_preprocess)
+    test_tagged.append(tagged)
+    test_probs.append(p)
+    tags = [tag for word, tag in tagged]
+    test_tagged_my_preprocess.append(zip(s_my_preprocess, tags))
+
+print 'transform data'
+test_probs, test_sparse, test_predictions = full_information_experiments.transform_input_for_training(dict_vectorizer,
+                                                                                                      test_probs,
+                                                                                                      test_tagged)
+my_examples, _my_labels = memm.create_examples(test_tagged_my_preprocess)
+my_sparse_features = dict_vectorizer.transform(my_examples)
+stolen_predictions1 = net.predict(test_sparse)
+print np.average(stolen_predictions1 == test_predictions)
+stolen_predictions2 = net.predict(my_sparse_features)
+print np.average(stolen_predictions2 == test_predictions)
