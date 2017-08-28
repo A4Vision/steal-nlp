@@ -1,14 +1,9 @@
-import sys
 import time
-import scipy
 from collections import Counter
 import numpy as np
-import os
 import theanets
-import cPickle
 import random
 from hw3 import inputs_generator
-from hw3 import model
 from hw3 import model_interface
 from hw3 import memm
 from hw3 import full_information_experiments
@@ -16,7 +11,7 @@ import os
 np.random.seed(123)
 random.seed(123)
 
-# num_words = 50
+num_words = 50
 
 
 train, dev, test = memm.load_train_dev_test_sentences("hw3/data", 20)
@@ -46,12 +41,13 @@ c.params[1].set_value(b_new)
 dict_vectorizer = memm.get_dict_vectorizer("hw3/data/", None, 20)
 interface = model_interface.ModelInterface(c, dict_vectorizer)
 count = full_information_experiments.count_words(test)
-words = [x for x in count if count[x] > 150]
+words = random.sample([x for x in count if 3 < count[x] < 5], num_words)
 print 'len(words)', len(words)
 gen = inputs_generator.SequentialInputsGenerator(inputs_generator.constant_generator(25), words)
 print 'gnerating sentences'
 dense_sentences = [gen.generate_input() for _ in xrange(1000)]
-probs = [];tagged = []
+probs = []
+tagged = []
 print 'quering'
 for s in dense_sentences:
     p, t = interface.predict_proba(s)
