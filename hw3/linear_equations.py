@@ -1,6 +1,9 @@
 import sys
 import os
-sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
+DATA_PATH = os.path.join(BASE_DIR, "data")
+sys.path.insert(0, ROOT_DIR)
 import time
 from collections import Counter
 import numpy as np
@@ -19,7 +22,7 @@ parser.add_argument("--num_queries", type=int, required=True)
 args = parser.parse_args(sys.argv[1:])
 print ' '.join(sys.argv)
 train, dev, test = memm.load_train_dev_test_sentences("hw3/data", 20)
-c = theanets.Classifier.load(os.path.expanduser("~/Downloads/all_freq20.pkl"))
+c = theanets.Classifier.load(os.path.join(DATA_PATH, "all_freq20.pkl"))
 
 w_original = c.params[0].get_value()
 b_original = c.params[1].get_value()
