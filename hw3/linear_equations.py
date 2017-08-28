@@ -1,4 +1,6 @@
 import sys
+import os
+sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 from collections import Counter
 import numpy as np
@@ -8,7 +10,6 @@ from hw3 import inputs_generator
 from hw3 import model_interface
 from hw3 import memm
 from hw3 import full_information_experiments
-import os
 import argparse
 np.random.seed(123)
 random.seed(123)
