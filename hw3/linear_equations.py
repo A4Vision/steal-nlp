@@ -82,7 +82,8 @@ print 'len(all_i)', len(all_i_sorted)
 
 columns = [sparse.getcol(i).toarray() for i in all_i_sorted]
 dense_matrix = np.hstack([column for column in columns] + [np.ones(shape=(columns[0].shape[0], 1), dtype=np.float64)])
-
+# To release some memory.
+del columns
 
 def l2(x):
     return np.sum(x ** 2)
