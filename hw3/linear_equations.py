@@ -223,10 +223,10 @@ for i in xrange(rhs.shape[1]):
 zs = np.vstack(zs).T
 
 # Validating z_i are all solutions to the equations: {lhs * x = rhs}
-assert abs(np.dot(lhs, zs) - rhs[:rank, :]).max() < 1e-7
+assert abs(np.dot(lhs, zs) - rhs[:rank, :]).max() < 1e-6
 # Validating z_i are all solution to the equations: {dense_matrix * x = B}
-assert np.average(abs(np.dot(dense_matrix, zs) - B)) < 1e-10
-assert np.max(abs(np.dot(dense_matrix, zs) - B)) < 1e-10
+assert np.average(abs(np.dot(dense_matrix, zs) - B)) < 1e-6
+assert np.max(abs(np.dot(dense_matrix, zs) - B)) < 1e-6
 
 
 
@@ -249,14 +249,14 @@ for row in w_stolen.T:
     assert is_minimal_vec(row, 1e-6)
 
 V = np.vstack([w_stolen[special_row] - w_stolen[i] for i in xrange(w_stolen.shape[0]) if i != special_row])
-assert np.max(abs(np.dot(dense_matrix, V.T) - B)) < 1e-10
+assert np.max(abs(np.dot(dense_matrix, V.T) - B)) < 1e-6
 
 w_real = c.params[0].get_value()
 b = c.params[1].get_value()
 w_real_relevant = np.vstack((w_real[all_i_sorted], b))
 
 V_real = np.vstack([w_real_relevant.T[special_row] - w_real_relevant.T[i] for i in xrange(w_stolen.shape[0]) if i != special_row])
-assert np.max(abs(np.dot(dense_matrix, V_real.T) - B)) < 1e-10
+assert np.max(abs(np.dot(dense_matrix, V_real.T) - B)) < 1e-6
 for row in w_real_relevant:
     assert row.shape == (45,)
     assert is_minimal_vec(row, 1e-7)
