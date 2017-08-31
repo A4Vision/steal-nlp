@@ -20,6 +20,8 @@ from hw3 import utils
 from hw3 import model_interface
 from hw3 import full_information_experiments
 
+STRATEGIES = ["MAX_SIGNIFICANCE", "FROM_TRAIN_SET", "SEQUENTIAL", "IID_WORDS", ]
+
 
 def w_l2_distance(w1, w2):
     return np.sqrt(np.sum((w1 - w2) ** 2, axis=1)).mean()
@@ -143,8 +145,7 @@ def main():
     parser.add_argument("--minimal_frequency", type=int, help="Minimal frequency for a word to be observed not unknown.", required=True)
     parser.add_argument("--total_queries_amount", type=int, help="Maximal amount of queries to use.", required=True)
     parser.add_argument("--batch_size", type=int, help="Number of queries per batch.", required=True)
-    parser.add_argument("--strategy", choices=["MAX_SIGNIFICANCE", "FROM_TRAIN_SET",
-                                                   "SEQUENTIAL", "IID_WORDS", ],
+    parser.add_argument("--strategy", choices=STRATEGIES,
                         type=str, help="Input sentences generation strategy.", required=True)
     parser.add_argument("--first_random", type=int,
                         help="Number of initial random queries.", required=True)
