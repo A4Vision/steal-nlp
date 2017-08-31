@@ -53,7 +53,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
     validation_probs, validation_sparse_features, validation_predictions = \
         full_information_experiments.transform_input_for_training(dict_vectorizer, validation_list_of_all_probs,
                                                                   tagged_validation_sents)
-
+    assert validation_probs.shape[0] == len(validation_predictions)
     l2_distances = []
     validation_kl_values = []
     queries_amounts = []
@@ -97,7 +97,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             accuracy = np.average(stolen_model.predict(validation_sparse_features) == validation_predictions)
             print 'validation accuracy', accuracy
             # TODO: calculate loss here, and some L2 distances.
-            validation_kl = scipy.stats.entropy(stolen_model.predict_proba(validation_sparse_features), validation_probs)
+            validation_kl = np.average(scipy.stats.entropy(stolen_model.predict_proba(validation_sparse_features.T), validation_probs.T))
             print 'validation kl', validation_kl
             print 'training_loss', train['loss']
             training_losses.append(train['loss'])
