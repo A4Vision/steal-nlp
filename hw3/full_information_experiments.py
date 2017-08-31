@@ -51,9 +51,8 @@ def transform_input_for_training(dict_vectorizer, probs_vecs_list, tagged_senten
     probs = np.concatenate(probs_vecs_list)
     examples, labels = memm.create_examples(tagged_sentences)
     sparse_features = dict_vectorizer.transform(examples)
-
     validation_predictions = np.argmax(probs, axis=1)
-
+    validation_predictions = validation_predictions.astype(np.int32)#added casting
     return probs, sparse_features, validation_predictions
 
 

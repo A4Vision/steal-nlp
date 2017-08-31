@@ -27,11 +27,11 @@ def w_l2_distance(w1, w2):
 
 def normalize_model(model):
     w = model.params[0].get_value()
-    b = model.params[1].get_vlue()
+    b = model.params[1].get_value()
     assert w.shape[1] == b.shape[0]
     utils.minimize_rows_norm(w)
     model.params[0].set_value(w)
-    model.params[0].set_value(utils.minimize_norm(b))
+    model.params[0].set_value(utils.minimize_norm(w))#changed b to w
 
 
 def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, stolen_model,
@@ -79,7 +79,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         new_tagged_sentences = []
         for sentence in new_sentences:
             sent_probs, tagged_sentence = original_model_interface.predict_proba(sentence)
-            new_probs.append(np.argmax(sent_probs, axis=1))
+            new_probs.append(sent_probs)# removed argmax from here
             new_tagged_sentences.append(tagged_sentence)
         new_probs, new_sparse_features, new_predictios = full_information_experiments.transform_input_for_training(
             dict_vectorizer, new_probs, new_tagged_sentences)
@@ -145,7 +145,7 @@ def main():
     parser.add_argument("--batch_size", type=int, help="Number of queries per batch.", required=True)
     parser.add_argument("--strategy", choices=["MAX_SIGNIFICANCE", "FROM_TRAIN_SET",
                                                    "SEQUENTIAL", "IID_WORDS", ],
-                        type=int, help="Input sentences generation strategy.", required=True)
+                        type=str, help="Input sentences generation strategy.", required=True)
     parser.add_argument("--first_random", type=int,
                         help="Number of initial random queries.", required=True)
     parser.add_argument("--num_words", type=int, help="Number of words to use in the queries.", required=True)
