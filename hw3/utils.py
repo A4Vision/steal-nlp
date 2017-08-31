@@ -92,3 +92,12 @@ def top_k(l, k):
     a = np.array(l)
     top_k_indices = np.argpartition(a, -k)[-k:]
     return a[top_k_indices]
+
+
+def minimize_norm(vec):
+    return vec - np.average(vec)
+
+
+def minimize_rows_norm(x):
+    for i in xrange(x.shape[0]):
+        x[i] = minimize_norm(x[i])

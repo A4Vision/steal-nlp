@@ -1,3 +1,4 @@
+import collections
 import os
 import re
 
@@ -42,15 +43,18 @@ def increment_count(count_dict, key):
         count_dict[key] = 1
 
 
+def untag(tagged_setence):
+    return [w for w, t in tagged_setence]
+
+
 def compute_vocab_count(sents):
     """
         Takes a corpus and computes all words and the number of times they appear
     """
-    vocab = {}
-    for sent in sents:
-        for token in sent:
-            increment_count(vocab, token[0])
-    return vocab
+    counter = collections.Counter()
+    for sentence in sents:
+        counter.update(untag(sentence))
+    return counter
 
 
 # Word categories for named-entity recognition table, copied from Bikel et al. (1999)

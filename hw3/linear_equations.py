@@ -12,6 +12,7 @@ import random
 from hw3 import inputs_generator
 from hw3 import model_interface
 from hw3 import memm
+from hw3 import utils
 from hw3 import full_information_experiments
 import argparse
 np.random.seed(123)
@@ -30,17 +31,8 @@ b_original = c.params[1].get_value()
 assert w_original.shape[1] == b_original.shape[0]
 
 
-def minimize_norm(vec):
-    return vec - np.average(vec)
-
-
-def minimize_rows_norm(x):
-    for i in xrange(x.shape[0]):
-        x[i] = minimize_norm(x[i])
-
-
-b_new = minimize_norm(b_original)
-minimize_rows_norm(w_original)
+b_new = utils.minimize_norm(b_original)
+utils.minimize_rows_norm(w_original)
 c.params[0].set_value(w_original)
 c.params[1].set_value(b_new)
 

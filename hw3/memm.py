@@ -121,6 +121,36 @@ def get_dict_vectorizer(data_path, examples, minimal_frequency):
         return vec
 
 
+def load_train_dev_test_sentences_other_preprocess(data_path, words_not_to_replace):
+    random.seed(123)
+    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))
+    original_dev_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/dev.gold.conll"))
+    original_test_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/test.gold.conll"))
+    tmp_vocab = {w: 1 for w in words_not_to_replace}
+    random.shuffle(original_dev_sents)
+    random.shuffle(original_train_sents)
+    random.shuffle(original_test_sents)
+    train_sents = preprocess_sent(tmp_vocab, original_train_sents, 1)
+    dev_sents = preprocess_sent(tmp_vocab, original_dev_sents, 1)
+    test_sents = preprocess_sent(tmp_vocab, original_test_sents, 1)
+    return train_sents, dev_sents, test_sents
+
+
+def top_words(data_path, minimal_frequency, amount):
+    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))
+    vocab = compute_vocab_count(original_train_sents)
+    train_sents = preprocess_sent(vocab, original_train_sents, minimal_frequency)
+    count_processed = compute_vocab_count(train_sents)
+    return sorted(count_processed.keys(), key=lambda w: count_processed[w])[-amount:]
+
+
+def preprocessed_train_use_words(data_path, words):
+    original_train_sents = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))
+    vocab = {w: 1 for w in words}
+    train_sents = preprocess_sent(vocab, original_train_sents, 1)
+    return train_sents
+
+
 def load_train_dev_test_sentences(data_path, minimal_frequency, num_dev_sents=None, num_train_sents=None):
     """
     Returns tagged training, development and test sentences.
@@ -175,3 +205,8 @@ def load_data(data_path, num_dev_sents, num_train_sents, minimal_frequency):
 
 def untag_sentence(tagged_sentence):
     return [w for w, t in tagged_sentence]
+
+
+def get_train_count(data_path):
+    train = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))
+    return compute_vocab_count(train)
