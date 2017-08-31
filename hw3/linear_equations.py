@@ -187,8 +187,8 @@ def solve_triangulated_equations(A, b):
         nz = row.nonzero()[0]
         if len(nz) > 0:
             leading = nz[0]
-            assert abs(row[leading] - 1.) < 0.00001
-            x[leading] = b[i]
+            assert abs(row[leading] - 1.) < 0.001
+            x[leading] = b[i] / row[leading]
     return x
 
 
@@ -246,22 +246,22 @@ for i in xrange(n):
 
 for row in w_stolen.T:
     assert row.shape == (45,)
-    assert is_minimal_vec(row, 1e-6)
+    assert is_minimal_vec(row, 1e-5)
 
 V = np.vstack([w_stolen[special_row] - w_stolen[i] for i in xrange(w_stolen.shape[0]) if i != special_row])
-assert np.max(abs(np.dot(dense_matrix, V.T) - B)) < 1e-6
+assert np.max(abs(np.dot(dense_matrix, V.T) - B)) < 1e-5
 
 w_real = c.params[0].get_value()
 b = c.params[1].get_value()
 w_real_relevant = np.vstack((w_real[all_i_sorted], b))
 
 V_real = np.vstack([w_real_relevant.T[special_row] - w_real_relevant.T[i] for i in xrange(w_stolen.shape[0]) if i != special_row])
-assert np.max(abs(np.dot(dense_matrix, V_real.T) - B)) < 1e-6
+assert np.max(abs(np.dot(dense_matrix, V_real.T) - B)) < 1e-5
 for row in w_real_relevant:
     assert row.shape == (45,)
-    assert is_minimal_vec(row, 1e-7)
+    assert is_minimal_vec(row, 1e-5)
 
-nz = (np.max(np.abs(w_stolen.T - w_real_relevant), axis=1) < 1e-8).nonzero()[0]
+nz = (np.max(np.abs(w_stolen.T - w_real_relevant), axis=1) < 1e-5).nonzero()[0]
 print 'Correct w columns:'
 print nz
 print 'W columns that could be deduced from equations:'
