@@ -2,9 +2,9 @@ import random
 
 import scipy.stats
 import numpy as np
-import theanets
 from hw3 import model_interface
 from hw3 import utils
+from hw3 import data
 from hw3 import memm
 import collections
 
@@ -71,7 +71,7 @@ class ScoreByCheating(InputScorer):
     def _probs_vec(self, sentence, i):
         tagged_sentence = self._generate_tagged_prefix(sentence, i)
         features_vec = memm.extract_features(tagged_sentence, i)
-        probs_vec = self._local_model.predict(features_vec)
+        probs_vec = self._local_model.predict_proba(self._dict_vectorizer.transform(features_vec))[0]
         return probs_vec
 
 
@@ -244,7 +244,7 @@ class GreedyInputsGenerator(InputGenerator):
 
     def generate_input(self):
         length = self._length_randomizer.random_element()
-        sentence = [''] * length
+        sentence = [data.UNKNOWN_WORD] * length
         for i in xrange(length):
             words = [self._word_randomizer.random_element() for _ in xrange(self._random_tries_per_word)]
             scores = {}

@@ -3,7 +3,7 @@ import os
 import re
 
 MIN_FREQ = 2
-
+UNKNOWN_WORD = "UNK"
 
 def invert_dict(d):
     res = {}
@@ -132,7 +132,7 @@ def replace_word(word, is_first, vocab, minimal_fequency):
     elif word.isalpha() and word.lower() == word:
         return 'lowercase'
     ### END YOUR CODE
-    return "UNK"
+    return UNKNOWN_WORD
 
 
 CAP_PERIOD_PATTERN = re.compile("^[A-Z]\\.$")

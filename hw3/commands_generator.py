@@ -18,10 +18,10 @@ def command(words, strategy, l2_weight, loss_improvement,
             original_model_fname, minimal_frequency):
     FORMAT = "python hw3/labels_only.py --original_model_file_name={0} --stolen_model_file_name=stolen --eta={1} " \
              "--l2_weight={2} --loss_improvement={3} --minimal_frequency={4} --total_queries_amount={5} --batch_size={6} " \
-             "--strategy={7} --first_random={8} --num_words={8} >& output_labels_only_freq{4}_words{8}_l2_weight{2}_lossimpr{3}_eta{1}_{7}.txt &"
+             "--strategy={7} --first_random={8} --num_words={8} >& ~/outputs/output_labels_only_freq{4}_words{8}_l2_weight{2}_lossimpr{3}_eta{1}_{7}.txt &"
     return FORMAT.format(original_model_fname, 6., l2_weight, loss_improvement, minimal_frequency, 100000,
                          600, strategy, 600, words)
-# $ source asdas.sh
+
 
 def main():
     parser = argparse.ArgumentParser("Creates command run file")
@@ -32,7 +32,7 @@ def main():
     for words in range(1000, 3001, 500):
         for strategy in labels_only.STRATEGIES:
             for l2_weight in [0.01, 0.0001]:
-                for loss_improvement in [1e-2, 1e-4]:
+                for loss_improvement in [1e-4, 1e-6]:
                     command_line = command(words, strategy, l2_weight, loss_improvement, "all_freq20.pkl", 20)
                     commands.append(command_line)
     for i in xrange(len(commands) / 3):

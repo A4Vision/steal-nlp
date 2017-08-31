@@ -101,7 +101,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             print 'validation kl', validation_kl
             print 'training_loss', train['loss']
             training_losses.append(train['loss'])
-            if len(training_losses) > 10 and train['loss'] + loss_improvement > np.average(training_losses[-10:]):
+            if len(training_losses) > 10 and train['loss'] + loss_improvement > np.average(training_losses[-10:-1]):
                 print 'Training loss stopped improving, breaking'
                 break
         print 'Optimization time: {}seconds'.format(time.time() - start_time)
@@ -172,6 +172,7 @@ def main():
 
     sentences_generator = None
     shape = original_model.params[0].get_value().shape
+    print 'shape', shape
     layers = [theanets.layers.base.Input(size=shape[0], sparse='csr'), shape[1]]
     stolen_model = theanets.Classifier(layers, loss='xe')
 

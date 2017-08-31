@@ -44,7 +44,8 @@ def extract_features_base(curr_word, next_word, prev_word, prevprev_word, prev_t
     # Capitalized
     features['is_cap'] = curr_word[0].isupper() and prev_tag != BEGIN_TAG
     features['prev_is_cap'] = prev_word[0].isupper() and prevprev_tag != BEGIN_TAG
-    features['next_is_cap'] = next_word[0].isupper() and next_word != END_TAG#added end_tag check
+    # TODO: Retrain the models, due to this correction !
+    features['next_is_cap'] = next_word[0].isupper() and next_word != BEGIN_TAG
 
 
     # To reduce features amount, we did not use the folowing features:
