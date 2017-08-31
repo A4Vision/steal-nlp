@@ -21,7 +21,7 @@ def command(words, strategy, l2_weight, loss_improvement,
              "--strategy={7} --first_random={8} --num_words={8} >& output_labels_only_freq{4}_words{8}_l2_weight{2}_lossimpr{3}_eta{1}_{7}.txt &"
     return FORMAT.format(original_model_fname, 6., l2_weight, loss_improvement, minimal_frequency, 100000,
                          600, strategy, 600, words)
-
+# $ source asdas.sh
 
 def main():
     parser = argparse.ArgumentParser("Creates command run file")
