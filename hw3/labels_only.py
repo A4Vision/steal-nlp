@@ -8,11 +8,13 @@ import numpy as np
 import time
 import scipy.stats
 
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
 DATA_PATH = os.path.join(BASE_DIR, "data")
 sys.path.insert(0, ROOT_DIR)
 
+from hw3.classifiers import sparse_logistic_regression
 from hw3 import memm
 from hw3 import inputs_generator
 from hw3 import data
@@ -33,12 +35,13 @@ def normalize_model(model):
     assert w.shape[1] == b.shape[0]
     utils.minimize_rows_norm(w)
     model.params[0].set_value(w)
-    model.params[0].set_value(utils.minimize_norm(w))#changed b to w
+    model.params[1].set_value(utils.minimize_norm(b))
 
 
 def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, stolen_model,
                minimal_frequency, eta, l2_weight, loss_improvement, maximal_queries_amount, batches_sizes,
                sentences_generator):
+    assert isinstance(stolen_model, sparse_logistic_regression.SparseBinaryLogisticRegression)
     assert isinstance(sentences_generator, inputs_generator.InputGenerator)
     assert ".pkl" not in stolen_model_fname
     print "Loading data"
@@ -48,11 +51,12 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
 
     print "generating sparse features examples - validation"
     validation_list_of_all_probs, tagged_validation_sents = full_information_experiments.experiment1_generate_training_examples(
-        dev_sents[:200], original_model_interface)
+        dev_sents[:400], original_model_interface)
 
     validation_probs, validation_sparse_features, validation_predictions = \
         full_information_experiments.transform_input_for_training(dict_vectorizer, validation_list_of_all_probs,
                                                                   tagged_validation_sents)
+    validation_indices = [[x for x in vec.indices if vec[0, x]] for vec in validation_sparse_features]
     assert validation_probs.shape[0] == len(validation_predictions)
     l2_distances = []
     validation_kl_values = []
@@ -66,9 +70,11 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
 
     all_training_predictions = []
     all_training_sparse_features = []
+    all_training_indices = []
 
     single_word_queries_amount = 0
-    previous_stolen_w = stolen_model.params[0].get_value()
+    # previous_stolen_w = stolen_model.params[0].get_value()
+    previous_stolen_w = stolen_model.w()
     for batch_size in batches_sizes:
         if single_word_queries_amount >= maximal_queries_amount:
             break
@@ -81,33 +87,42 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         new_tagged_sentences = []
         for sentence in new_sentences:
             sent_probs, tagged_sentence = original_model_interface.predict_proba(sentence)
-            new_probs.append(sent_probs)# removed argmax from here
+            new_probs.append(sent_probs)
             new_tagged_sentences.append(tagged_sentence)
         new_probs, new_sparse_features, new_predictios = full_information_experiments.transform_input_for_training(
             dict_vectorizer, new_probs, new_tagged_sentences)
         all_training_predictions.append(new_predictios)
         all_training_sparse_features.append(new_sparse_features)
+        all_training_indices += [[int(x) for x in vec.indices if vec[0, x]] for vec in new_sparse_features]
+        indices7 = [x for x in all_training_indices if len(x) == 7]
+        indices8 = [x for x in all_training_indices if len(x) == 8]
         training_losses = []
         start_time = time.time()
 
-        for train, valid in stolen_model.itertrain([scipy.sparse.vstack(all_training_sparse_features, format='csr'),
-                                                    np.concatenate(all_training_predictions)],
-                                                   algo='sgd', learning_rate=eta, weight_l2=l2_weight):
-            normalize_model(stolen_model)
-            accuracy = np.average(stolen_model.predict(validation_sparse_features) == validation_predictions)
+        # for train, valid in stolen_model.itertrain([scipy.sparse.vstack(all_training_sparse_features, format='csr'),
+        #                                             np.concatenate(all_training_predictions)],
+        #                                            algo='sgd', learning_rate=eta, weight_l2=l2_weight):
+        for i in xrange(1, 100):
+            stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, eta / i ** 0.8, l2_weight)
+            stolen_model.set_w(utils.minimize_rows_norm(stolen_model.w()))
+            # normalize_model(stolen_model)
+            accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
             print 'validation accuracy', accuracy
             # TODO: calculate loss here, and some L2 distances.
-            validation_kl = np.average(scipy.stats.entropy(stolen_model.predict_proba(validation_sparse_features).T, validation_probs.T))
-            print 'validation kl', validation_kl
-            print 'training_loss', train['loss']
-            training_losses.append(train['loss'])
-            if len(training_losses) > 10 and train['loss'] + loss_improvement > np.average(training_losses[-10:-1]):
+            validation_kl = np.average(scipy.stats.entropy(stolen_model.predict_proba(validation_indices).T,
+                                                           validation_probs.T))
+            # print 'validation kl', validation_kl
+            train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions), l2_weight)
+            print 'training_loss', train_loss
+            training_losses.append(train_loss)
+            if len(training_losses) > 10 and train_loss + loss_improvement > np.average(training_losses[-10:-1]):
                 print 'Training loss stopped improving, breaking'
                 break
         print 'Optimization time: {}seconds'.format(time.time() - start_time)
 
         original_w = original_model_interface.get_w()
-        stolen_w = stolen_model.params[0].get_value()
+        # stolen_w = stolen_model.params[0].get_value()
+        stolen_w = stolen_model.w()
         l2_distance_from_previous_w.append(w_l2_distance(stolen_w, previous_stolen_w))
         previous_stolen_w = stolen_w
         average_l2_distance = w_l2_distance(original_w, stolen_w)
@@ -175,6 +190,8 @@ def main():
     print 'shape', shape
     layers = [theanets.layers.base.Input(size=shape[0], sparse='csr'), shape[1]]
     stolen_model = theanets.Classifier(layers, loss='xe')
+
+    stolen_model = sparse_logistic_regression.SparseBinaryLogisticRegression(10, shape[0], shape[1])
 
     if args.strategy == "MAX_SIGNIFICANCE":
         train_freq = memm.get_train_count(DATA_PATH)

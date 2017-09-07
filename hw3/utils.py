@@ -101,3 +101,40 @@ def minimize_norm(vec):
 def minimize_rows_norm(x):
     for i in xrange(x.shape[0]):
         x[i] = minimize_norm(x[i])
+    return x
+
+
+def iter_batches(batch_size, *list_arrays):
+    a = list_arrays[0]
+    n = a.shape[0]
+    for b in list_arrays:
+        assert n == b.shape[0]
+    permutation = np.random.permutation(n)
+    for i in xrange(int(np.ceil(n / float(batch_size)))):
+        sub_perm = permutation[i * batch_size: (i + 1) * batch_size]
+        yield [b[sub_perm] for b in list_arrays]
+
+
+def test_iter_batches():
+    a = np.random.randint(0, 100, (20, 10))
+    b = np.random.randint(0, 100, 20)
+    l = list(iter_batches(3, a, b))
+    lens = [3, 3, 3, 3, 3, 3, 2]
+    assert [(x.shape[0], y.shape[0]) for x, y in l] == zip(lens, lens)
+    unitied_a = np.vstack([x for x, y in l])
+    unitied_b = np.concatenate([y for x, y in l])
+    assert set(unitied_b) == set(b)
+    assert set(map(tuple, a)) == set(map(tuple, unitied_a))
+
+
+def invert_permutation(p):
+    '''The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1.
+    Returns an array s, where s[i] gives the index of i in p.
+    '''
+    s = np.empty(p.size, p.dtype)
+    s[p] = np.arange(p.size)
+    return s
+
+
+if __name__ == '__main__':
+    test_iter_batches()
