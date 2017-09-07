@@ -94,16 +94,17 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         all_training_predictions.append(new_predictios)
         all_training_sparse_features.append(new_sparse_features)
         all_training_indices += [[int(x) for x in vec.indices if vec[0, x]] for vec in new_sparse_features]
-        indices7 = [x for x in all_training_indices if len(x) == 7]
-        indices8 = [x for x in all_training_indices if len(x) == 8]
         training_losses = []
         start_time = time.time()
 
         # for train, valid in stolen_model.itertrain([scipy.sparse.vstack(all_training_sparse_features, format='csr'),
         #                                             np.concatenate(all_training_predictions)],
         #                                            algo='sgd', learning_rate=eta, weight_l2=l2_weight):
-        for i in xrange(1, 100):
-            stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, eta / i ** 0.8, l2_weight)
+        start = time.time()
+        for i in xrange(1, 1000):
+            current_eta = eta / i ** 0.9
+            print 'eta=', current_eta
+            stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, current_eta, l2_weight)
             stolen_model.set_w(utils.minimize_rows_norm(stolen_model.w()))
             # normalize_model(stolen_model)
             accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
@@ -115,6 +116,9 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions), l2_weight)
             print 'training_loss', train_loss
             training_losses.append(train_loss)
+            if time.time() - start > 3600:
+                print 'Training time exceeded, breaking'
+                break
             if len(training_losses) > 10 and train_loss + loss_improvement > np.average(training_losses[-10:-1]):
                 print 'Training loss stopped improving, breaking'
                 break
