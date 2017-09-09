@@ -101,7 +101,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         #                                             np.concatenate(all_training_predictions)],
         #                                            algo='sgd', learning_rate=eta, weight_l2=l2_weight):
         start = time.time()
-        for i in xrange(1, 10000):
+        for i in xrange(1, 20):
             current_eta = eta / i ** 0.9
             print 'eta=', current_eta
             stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, current_eta, l2_weight)

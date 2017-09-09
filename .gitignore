@@ -102,6 +102,8 @@ ENV/
 
 # Data files.
 data/
+outputs/
+runs/
 *.conll
 *.pkl
 *.zip
