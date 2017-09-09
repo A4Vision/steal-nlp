@@ -113,4 +113,4 @@ if __name__ == '__main__':
         commands = [["killall -u {}".format(username)] for script in args.scripts]
     else:
         commands = [[script] for script in args.scripts]
-    execute_commands(args.servers_names, [[script] for script in args.scripts])
+    execute_commands(args.servers_names, commands)
