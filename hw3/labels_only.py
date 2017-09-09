@@ -107,21 +107,21 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, current_eta, l2_weight)
             stolen_model.set_w(utils.minimize_rows_norm(stolen_model.w()))
             # normalize_model(stolen_model)
-            accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
-            print 'validation accuracy', accuracy
-            # TODO: calculate loss here, and some L2 distances.
-            validation_kl = np.average(scipy.stats.entropy(stolen_model.predict_proba(validation_indices).T,
-                                                           validation_probs.T))
-            # print 'validation kl', validation_kl
-            train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions), l2_weight)
-            print 'training_loss', train_loss
-            training_losses.append(train_loss)
-            if time.time() - start > 3600:
-                print 'Training time exceeded, breaking'
-                break
-            if len(training_losses) > 10 and train_loss + loss_improvement > np.average(training_losses[-10:-1]):
-                print 'Training loss stopped improving, breaking'
-                break
+            # accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
+            # print 'validation accuracy', accuracy
+            # # TODO: calculate loss here, and some L2 distances.
+            # validation_kl = np.average(scipy.stats.entropy(stolen_model.predict_proba(validation_indices).T,
+            #                                                validation_probs.T))
+            # # print 'validation kl', validation_kl
+            # train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions), l2_weight)
+            # print 'training_loss', train_loss
+            # training_losses.append(train_loss)
+            # if time.time() - start > 3600:
+            #     print 'Training time exceeded, breaking'
+            #     break
+            # if len(training_losses) > 10 and train_loss + loss_improvement > np.average(training_losses[-10:-1]):
+            #     print 'Training loss stopped improving, breaking'
+            #     break
         print 'Optimization time: {}seconds'.format(time.time() - start_time)
 
         original_w = original_model_interface.get_w()
