@@ -32,6 +32,7 @@ def main():
     parser = argparse.ArgumentParser("Creates command run file")
     parser.add_argument("--output", required=True)
     parser.add_argument("--jobs_per_file", required=True, type=int)
+    parser.add_argument("--freq", required=True, type=int)
     args = parser.parse_args(sys.argv[1:])
     commands = []
 
@@ -39,7 +40,8 @@ def main():
         for strategy in labels_only.STRATEGIES:
             for l2_weight in [0.0]:
                 for loss_improvement in [1e-2, 1e-3]:
-                    command_line = command(words, strategy, l2_weight, loss_improvement, "all_freq20.pkl", 20)
+                    command_line = command(words, strategy, l2_weight, loss_improvement,
+                                           "all_freq{}_my.pkl".format(args.freq), args.freq)
                     commands.append(command_line)
 
     n_jobs = args.jobs_per_file
