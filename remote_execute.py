@@ -108,7 +108,7 @@ if __name__ == '__main__':
     if args.user:
         username = args.user
     else:
-        username = os.environ['USER']
+        username = os.environ.get('USER', os.environ.get('USERNAME', None))
     if args.kill:
         commands = [["killall -u {}".format(username)] for script in args.scripts]
     else:
