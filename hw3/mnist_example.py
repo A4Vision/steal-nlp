@@ -15,6 +15,32 @@ def transform_data_to_distributions((x, y)):
     z[range(y.shape[0]), y] = 1. - 1 / 100. * (y.max())
     return x, z
 
+class RegressionCrossEntropy(theanets.losses.Loss):
+    __extra_registration_keys__ = ['RXE']
+
+    def __call__(self, outputs):
+        output = outputs[self.output_name]
+        # eps = 1e-8
+        # prob = TT.clip(output, eps, 1 - eps)
+        prob = output
+        actual = self._target
+        cross_entropy = -actual * TT.log(prob)
+        return cross_entropy.mean()
+
+
+class RegressionCrossEntropyInverted(theanets.losses.Loss):
+    __extra_registration_keys__ = ['RXE']
+
+    def __call__(self, outputs):
+        output = outputs[self.output_name]
+        # eps = 1e-8
+        prob = output  # TT.clip(output, eps, 1 - eps)
+        actual = self._target
+        cross_entropy = -prob * TT.log(actual)
+        return cross_entropy.mean()
+
+
+
 
 def train_mnist_example():
 

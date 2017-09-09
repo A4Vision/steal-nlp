@@ -71,14 +71,16 @@ class ScoreByCheating(InputScorer):
     def _probs_vec(self, sentence, i):
         tagged_sentence = self._generate_tagged_prefix(sentence, i)
         features_vec = memm.extract_features(tagged_sentence, i)
-        probs_vec = self._local_model.predict_proba(self._dict_vectorizer.transform(features_vec))[0]
+        v = self._dict_vectorizer.transform(features_vec)
+        indices = [x for x in v[0].indices if v[0, x]]
+        probs_vec = self._local_model.predict_proba([indices])[0]
         return probs_vec
 
 
 # These two scoring strategies optimize only for the information held in the feature
 # of the current word. Later, we will optimize also for the information held in the features of
 # prev_word, and prevprev_word.
-class ScoreEntropyByCheating(ScoreByCheating):
+class MaxEntropy(ScoreByCheating):
     def score(self, sentence, i):
         """
         Entropy of the prediction vector.
@@ -94,7 +96,7 @@ class ScoreEntropyByCheating(ScoreByCheating):
 
 
 # Note: here, we ignore the requirement of having an easy decision for the model without the current word.
-class ScoreSubtleDecisionByCheating(ScoreByCheating):
+class SubtleDecision(ScoreByCheating):
     def score(self, sentence, i):
         """
         Minus the distance between two highest probabilities.
@@ -106,6 +108,21 @@ class ScoreSubtleDecisionByCheating(ScoreByCheating):
         # TODO: Consider looking on top 3.
         a, b = utils.top_k(probs_vec, 2)
         return -abs(a - b)
+
+    def inform_queried_with(self, sentence):
+        pass
+
+
+class MaximalGradient(ScoreByCheating):
+    def score(self, sentence, i):
+        """
+        Maximize the gradient l2 norm.
+        :param sentence:
+        :param i:
+        :return:
+        """
+        probs_vec = self._probs_vec(sentence, i)
+        return -np.sum(probs_vec ** 2)
 
     def inform_queried_with(self, sentence):
         pass
