@@ -4,7 +4,6 @@ import os
 import socket
 import traceback
 
-import scp
 import colors
 import argparse
 import threading
