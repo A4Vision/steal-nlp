@@ -6,7 +6,6 @@ import numpy as np
 import time
 import scipy.stats
 
-
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
 DATA_PATH = os.path.join(BASE_DIR, "data")
@@ -18,7 +17,6 @@ from hw3 import inputs_generator
 from hw3 import data
 from hw3 import utils
 from hw3 import model_interface
-from hw3 import full_information_experiments
 
 STRATEGIES = ["MAX_SIGNIFICANCE", "FROM_TRAIN_SET", "SEQUENTIAL", "IID_WORDS", "MAX_GRADIENT", "MAX_ENTROPY"]
 
@@ -39,13 +37,13 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
     train_sents, dev_sents, test_sents = memm.load_train_dev_test_sentences(DATA_PATH, minimal_frequency)
 
     print "generating sparse features examples - validation"
-    validation_list_of_all_probs, tagged_validation_sents = full_information_experiments.experiment1_generate_training_examples(
-        dev_sents[:400], original_model_interface)
+    validation_list_of_all_probs, tagged_validation_sents = utils.experiment1_generate_training_examples(
+            dev_sents[:400], original_model_interface)
 
     print "creating input for training"
     validation_probs, validation_sparse_features, validation_predictions = \
-        full_information_experiments.transform_input_for_training(dict_vectorizer, validation_list_of_all_probs,
-                                                                  tagged_validation_sents)
+        memm.transform_input_for_training(dict_vectorizer, validation_list_of_all_probs,
+                                          tagged_validation_sents)
     validation_indices = [[x for x in vec.indices if vec[0, x]] for vec in validation_sparse_features]
     assert validation_probs.shape[0] == len(validation_predictions)
     l2_distances = []
@@ -82,8 +80,8 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             sent_probs, tagged_sentence = original_model_interface.predict_proba(sentence)
             new_probs.append(sent_probs)
             new_tagged_sentences.append(tagged_sentence)
-        new_probs, new_sparse_features, new_predictios = full_information_experiments.transform_input_for_training(
-            dict_vectorizer, new_probs, new_tagged_sentences)
+        new_probs, new_sparse_features, new_predictios = memm.transform_input_for_training(
+                dict_vectorizer, new_probs, new_tagged_sentences)
         all_training_predictions.append(new_predictios)
         all_training_sparse_features.append(new_sparse_features)
         all_training_indices += [[int(x) for x in vec.indices if vec[0, x]] for vec in new_sparse_features]
@@ -92,13 +90,15 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
 
         for i in xrange(1, 10000):
             current_eta = eta / i ** 0.3
-            stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, current_eta, l2_weight)
+            stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, current_eta,
+                                        l2_weight)
             stolen_model.set_w(utils.minimize_rows_norm(stolen_model.w()))
             if i % 10 == 0:
                 print 'eta=', current_eta
                 accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
                 print 'validation accuracy', accuracy
-                train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions), l2_weight)
+                train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions),
+                                               l2_weight)
                 print 'training_loss', train_loss
                 training_losses.append(train_loss)
                 if time.time() - start_time > 3600:
@@ -148,12 +148,15 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
 
 def main():
     parser = argparse.ArgumentParser(description='Steal POS model.')
-    parser.add_argument("--original_model_file_name", type=str, help="File name for the original classifier.", required=True)
-    parser.add_argument("--stolen_model_file_name", type=str, help="File name for the stolen classifier.", required=True)
+    parser.add_argument("--original_model_file_name", type=str, help="File name for the original classifier.",
+                        required=True)
+    parser.add_argument("--stolen_model_file_name", type=str, help="File name for the stolen classifier.",
+                        required=True)
     parser.add_argument("--eta", type=float, help="Learning rate.", required=True)
     parser.add_argument("--l2_weight", type=float, help="L2 weight.", required=True)
     parser.add_argument("--loss_improvement", type=float, help="Maximal optimization runtime.", required=True)
-    parser.add_argument("--minimal_frequency", type=int, help="Minimal frequency for a word to be observed not unknown.", required=True)
+    parser.add_argument("--minimal_frequency", type=int,
+                        help="Minimal frequency for a word to be observed not unknown.", required=True)
     parser.add_argument("--total_queries_amount", type=int, help="Maximal amount of queries to use.", required=True)
     parser.add_argument("--batch_size", type=int, help="Number of queries per batch.", required=True)
     parser.add_argument("--strategy", choices=STRATEGIES,
@@ -179,7 +182,8 @@ def main():
 
     LENGTH = 25
     length_generator = inputs_generator.constant_generator(LENGTH)
-    batches_sizes = [args.first_random / LENGTH] + [args.batch_size / LENGTH] * ((args.total_queries_amount - args.first_random) // args.batch_size)
+    batches_sizes = [args.first_random / LENGTH] + [args.batch_size / LENGTH] * (
+    (args.total_queries_amount - args.first_random) // args.batch_size)
 
     sentences_generator = None
     shape = original_model.w().shape
@@ -187,12 +191,13 @@ def main():
 
     stolen_model = sparse_logistic_regression.SparseBinaryLogisticRegression(10, shape[0], shape[1])
     iid_generator = inputs_generator.GreedyInputsGenerator(length_generator,
-                                                           inputs_generator.RandomizeByFrequenciesIIDFromDict({w: 1 for w in words}),
+                                                           inputs_generator.RandomizeByFrequenciesIIDFromDict(
+                                                                   {w: 1 for w in words}),
                                                            inputs_generator.TrivialInputScorer(), 1)
     first_senteneces_generator = iid_generator
     train_freq = memm.get_train_count(DATA_PATH)
     proportional_words_randomizer = inputs_generator.RandomizeByFrequencyProportionaly(
-                                                                         train_freq, 1.05)
+            train_freq, 1.05)
     if args.strategy == "MAX_SIGNIFICANCE":
         scorer = inputs_generator.SubtleDecision(dict_vectorizer, stolen_model, original_interface)
         sentences_generator = inputs_generator.GreedyInputsGenerator(length_generator,

@@ -19,18 +19,6 @@ from hw3 import utils
 from hw3 import model_interface
 
 
-def experiment1_generate_training_examples(wrongly_tagged_sentences, original_model):
-    list_of_all_probs = []
-    tagged_sentences = []
-
-    for i, tagged_sentence in enumerate(wrongly_tagged_sentences):
-        if i % 100 == 0:
-            print i / float(len(wrongly_tagged_sentences))
-        sentence = [word for word, tag in tagged_sentence]
-        probs_vecs, model_tagged_sentence = original_model.predict_proba(sentence)
-        list_of_all_probs.append(probs_vecs)
-        tagged_sentences.append(model_tagged_sentence)
-    return list_of_all_probs, tagged_sentences
 
 
 def random_subset(l1, l2, n):
@@ -47,14 +35,6 @@ def count_words(tagged_sentences):
     return res
 
 
-def transform_input_for_training(dict_vectorizer, probs_vecs_list, tagged_sentences):
-    probs = np.concatenate(probs_vecs_list)
-    examples, labels = memm.create_examples(tagged_sentences)
-    sparse_features = dict_vectorizer.transform(examples)
-    validation_predictions = np.argmax(probs, axis=1)
-    validation_predictions = validation_predictions.astype(np.int32)#added casting
-    return probs, sparse_features, validation_predictions
-
 
 def experiment_use_training_set_sentences(model_path, stolen_model_fname, minimal_frequency, batches_sizes,
                                           maximal_queries_amount, sentences_generator, optimization_time):
@@ -68,11 +48,11 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
     train_sents, dev_sents, test_sents = memm.load_train_dev_test_sentences(model.DATA_PATH, minimal_frequency)
 
     print "generating sparse features examples - validation"
-    validation_list_of_all_probs, tagged_validation_sents = experiment1_generate_training_examples(dev_sents[:200],
+    validation_list_of_all_probs, tagged_validation_sents = utils.experiment1_generate_training_examples(dev_sents[:200],
                                                                                                    original_model)
 
     validation_probs, validation_sparse_features, validation_predictions = \
-        transform_input_for_training(dict_vectorizer, validation_list_of_all_probs, tagged_validation_sents)
+        memm.transform_input_for_training(dict_vectorizer, validation_list_of_all_probs, tagged_validation_sents)
 
     input_size = validation_sparse_features.shape[1]
     print "input_size", input_size
@@ -113,7 +93,7 @@ def experiment_use_training_set_sentences(model_path, stolen_model_fname, minima
             sent_probs, tagged_sentence = original_model.predict_proba(sentence)
             new_probs.append(sent_probs)
             new_tagged_sentences.append(tagged_sentence)
-        new_probs, new_sparse_features, _ = transform_input_for_training(dict_vectorizer, new_probs,
+        new_probs, new_sparse_features, _ = memm.transform_input_for_training(dict_vectorizer, new_probs,
                                                                          new_tagged_sentences)
         all_probs.append(new_probs)
         all_sparse_features.append(new_sparse_features)

@@ -5,6 +5,21 @@ import scipy
 import scipy.sparse
 
 
+def experiment1_generate_training_examples(wrongly_tagged_sentences, original_model):
+    list_of_all_probs = []
+    tagged_sentences = []
+
+    for i, tagged_sentence in enumerate(wrongly_tagged_sentences):
+        if i % 100 == 0:
+            print i / float(len(wrongly_tagged_sentences))
+        sentence = [word for word, tag in tagged_sentence]
+        probs_vecs, model_tagged_sentence = original_model.predict_proba(sentence)
+        list_of_all_probs.append(probs_vecs)
+        tagged_sentences.append(model_tagged_sentence)
+    return list_of_all_probs, tagged_sentences
+
+
+
 class Timer(object):
     def __init__(self, part_name):
         self._times = collections.defaultdict(int)
@@ -109,3 +124,5 @@ def invert_permutation(p):
 
 if __name__ == '__main__':
     test_iter_batches()
+
+

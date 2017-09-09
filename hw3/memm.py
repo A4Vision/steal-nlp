@@ -1,3 +1,4 @@
+import numpy as np
 import utils
 import cPickle
 import collections
@@ -212,3 +213,11 @@ def untag_sentence(tagged_sentence):
 def get_train_count(data_path):
     train = read_conll_pos_file(os.path.join(data_path, "Penn_Treebank/train.gold.conll"))
     return compute_vocab_count(train)
+
+
+def transform_input_for_training(dict_vectorizer, probs_vecs_list, tagged_sentences):
+    probs = np.concatenate(probs_vecs_list)
+    examples, labels = create_examples(tagged_sentences)
+    sparse_features = dict_vectorizer.transform(examples)
+    validation_predictions = np.int32(np.argmax(probs, axis=1))
+    return probs, sparse_features, validation_predictions
