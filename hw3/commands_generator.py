@@ -46,12 +46,14 @@ def main():
 
     n_jobs = args.jobs_per_file
     for i in xrange(int(math.ceil(len(commands) / float(args.jobs_per_file)))):
-        with open(args.output + str(i) + ".sh", "wb") as f:
+        fname = args.output + str(i) + ".sh"
+        with open(fname, "wb") as f:
             f.write("#! /bin/bash\n\n")
+            f.write("cd steal-nlp\n")
             f.write("\n".join(commands[n_jobs * i: n_jobs * (i + 1)]))
             f.write("\n")
             f.write("\n\ndisown -h\n")
-
+        os.chmod(fname, 0764)
 
 if __name__ == '__main__':
     main()

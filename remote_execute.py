@@ -106,9 +106,8 @@ def execute_commands(servers_names, commands_lists):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Launch bash scripts.')
-    parser.add_argument("--server_name", type=str, help="server name. server-XX should exist.",
+    parser.add_argument("--servers_names", nargs="+", help="server name. server-XX should exist.",
                         required=True)
-    parser.add_argument("--numbers", type=bool, help="Add numbers to server name.")
     parser.add_argument("--scripts", nargs="+", help="scripts to execute.",
                         required=True)
     try:
@@ -116,8 +115,4 @@ if __name__ == '__main__':
     except:
         parser.print_help()
         raise
-    if args.numbers:
-        servers = ["{}-{:02d}".format(args.server_name, i + 1) for i in xrange(len(args.scripts))]
-    else:
-        servers = [args.server_name] * len(args.scripts)
-    execute_commands(servers, [[script] for script in args.scripts])
+    execute_commands(args.servers_names, [[script] for script in args.scripts])
