@@ -50,21 +50,6 @@ def concurrent_map(func, inputs):
         t.join()
 
 
-def kill_worker(username, password, hostname):
-    """
-    Kills all user's processes on the given host.
-    :param username:
-    :param password:
-    :param hostname:
-    :return:
-    """
-    assert ping(hostname)
-    ssh = ssh_connect(username, password, hostname)
-    stdin, stdout, stderr = ssh.exec_command("killall -u {}".format(username), get_pty=True)
-    print stdout
-    ssh.close()
-
-
 def get_username_password():
     username = raw_input("Username:")
     password = getpass.getpass(prompt='Password: ')
@@ -110,9 +95,21 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument("--scripts", nargs="+", help="scripts to execute.",
                         required=True)
+    parser.add_argument("--kill", type=bool, help="Kill all.",
+                        required=False)
+    parser.add_argument("--user", type=str, help="Username.",
+                        required=False)
     try:
         args = parser.parse_args(sys.argv[1:])
     except:
         parser.print_help()
         raise
+    if args.kill:
+        if args.user:
+            username = args.user
+        else:
+            username = os.environ['USER']
+        commands = [["killall -u {}".format(username)] for script in args.scripts]
+    else:
+        commands = [[script] for script in args.scripts]
     execute_commands(args.servers_names, [[script] for script in args.scripts])
