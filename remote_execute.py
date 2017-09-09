@@ -104,11 +104,12 @@ if __name__ == '__main__':
     except:
         parser.print_help()
         raise
+
+    if args.user:
+        username = args.user
+    else:
+        username = os.environ['USER']
     if args.kill:
-        if args.user:
-            username = args.user
-        else:
-            username = os.environ['USER']
         commands = [["killall -u {}".format(username)] for script in args.scripts]
     else:
         commands = [[script] for script in args.scripts]
