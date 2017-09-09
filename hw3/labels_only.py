@@ -129,8 +129,8 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
 
         print 'current training losses'
         print training_losses
-        stolen_model.save(os.path.join(DATA_PATH, "{}_queries{}.pkl".format(stolen_model_fname,
-                                                                            single_word_queries_amount)))
+        # stolen_model.save(os.path.join(DATA_PATH, "{}_queries{}.pkl".format(stolen_model_fname,
+        #                                                                     single_word_queries_amount)))
 
     print 'unique_words_amounts'
     print unique_words_amounts

@@ -31,6 +31,7 @@ def command(words, strategy, l2_weight, loss_improvement,
 def main():
     parser = argparse.ArgumentParser("Creates command run file")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--jobs_per_file", required=True, type=int)
     args = parser.parse_args(sys.argv[1:])
     commands = []
 
@@ -41,10 +42,11 @@ def main():
                     command_line = command(words, strategy, l2_weight, loss_improvement, "all_freq20.pkl", 20)
                     commands.append(command_line)
 
-    for i in xrange(int(math.ceil(len(commands) / 4.))):
+    n_jobs = args.jobs_per_file
+    for i in xrange(int(math.ceil(len(commands) / float(args.jobs_per_file)))):
         with open(args.output + str(i) + ".sh", "wb") as f:
             f.write("#! /bin/bash\n\n")
-            f.write("\n".join(commands[4 * i: 4 * (i + 1)]))
+            f.write("\n".join(commands[n_jobs * i: n_jobs * (i + 1)]))
             f.write("\n")
             f.write("\n\ndisown -h\n")
 
