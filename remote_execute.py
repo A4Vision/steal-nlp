@@ -117,7 +117,7 @@ if __name__ == '__main__':
         parser.print_help()
         raise
     if args.numbers:
-        servers = ["{}-{:02d}".format(args.server_name, i) for i in xrange(len(args.scripts))]
+        servers = ["{}-{:02d}".format(args.server_name, i + 1) for i in xrange(len(args.scripts))]
     else:
         servers = [args.server_name] * len(args.scripts)
     execute_commands(servers, [[script] for script in args.scripts])
