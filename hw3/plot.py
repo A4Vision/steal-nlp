@@ -50,7 +50,8 @@ def simplify_title(title):
 
 
 def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
-    fig = plt.figure()
+    my_dpi = 96
+    fig = plt.figure(figsize=(800 / my_dpi, 800 / my_dpi), dpi=my_dpi)
     ax = plt.subplot(111)
 
     for title, color, y, x in zip(titles, colors, ys_lists, xs):
@@ -97,7 +98,6 @@ def main():
                                                                        if t in valid_filenames])
 
         plt.savefig(dirname + "/" + plot_type + ".png")
-
 
 
 if __name__ == '__main__':

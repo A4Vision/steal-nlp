@@ -16,7 +16,7 @@ train, dev, test = memm.load_train_dev_test_sentences(DATA_PATH, 50)
 train = map(data.untag, train)
 dev = map(data.untag, dev)
 
-model = ngram_model.NGramModel(train, 0.2, 0.6)
+model = ngram_model.NGramModel(train, 0.25, 0.55)
 
 print 'dev perplexity', model.evaluate_ngrams(dev)
 

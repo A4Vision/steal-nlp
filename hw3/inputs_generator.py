@@ -1,4 +1,6 @@
 import random
+import collections
+import Queue
 
 import scipy.stats
 import numpy as np
@@ -7,7 +9,6 @@ from hw3 import utils
 from hw3 import randomizers
 from hw3 import data
 from hw3 import memm
-import collections
 
 
 class InputScorer(object):
@@ -164,7 +165,10 @@ class InputGenerator(object):
         raise NotImplementedError
 
     def iterations(self):
-        raise NotImplementedError
+        return 0
+
+    def clean_cache(self):
+        pass
 
 
 class GreedyInputsGenerator(InputGenerator):
@@ -196,43 +200,6 @@ class GreedyInputsGenerator(InputGenerator):
         self._scorer.inform_queried_with(sentence)
         self._length_randomizer.selected_elements([length])
         return sentence
-
-    def iterations(self):
-        return 0
-
-
-class GreedyInputsGenerator(InputGenerator):
-    """
-    Generates sentences such that the words are super-uniformly distributed.
-    """
-    def __init__(self, length_randomizer, words_randomizer, input_scorer, random_tries_per_word):
-        assert isinstance(words_randomizer, randomizers.Randomizer)
-        assert isinstance(length_randomizer, randomizers.Randomizer)
-        assert isinstance(input_scorer, InputScorer)
-        assert random_tries_per_word > 0
-        self._length_randomizer = length_randomizer
-        self._word_randomizer = words_randomizer
-        self._scorer = input_scorer
-        self._random_tries_per_word = random_tries_per_word
-
-    def generate_input(self):
-        length = self._length_randomizer.random_element()
-        sentence = [data.UNKNOWN_WORD] * length
-        for i in xrange(length):
-            words = [self._word_randomizer.random_element() for _ in xrange(self._random_tries_per_word)]
-            scores = {}
-            for word in words:
-                sentence[i] = word
-                scores[word] = self._scorer.score(sentence, i)
-            sentence[i] = dict_argmax(scores)
-        # Inform scorer and randomizer about our selections.
-        self._word_randomizer.selected_elements(sentence)
-        self._scorer.inform_queried_with(sentence)
-        self._length_randomizer.selected_elements([length])
-        return sentence
-
-    def iterations(self):
-        return 0
 
 
 class SequentialInputsGenerator(InputGenerator):
@@ -279,3 +246,42 @@ class SubsetInputsGenerator(InputGenerator):
 
 def constant_generator(element):
     return randomizers.RandomizeByFrequenciesIIDFromDict({element: 1})
+
+
+class SelectFromOtherInputsGenerator(InputGenerator):
+    """
+    Generates sentences using one generator, scores them using a scorer and select only
+    the sentences with highest scores.
+    """
+    def __init__(self, sub_generator, scorer, n_sentences_per_good):
+        self._sub_generator = sub_generator
+        self._scorer = scorer
+        # Previously examined sentences -> score.
+        self._best_sentences = Queue.PriorityQueue()
+        self._n_sentences_per_good = n_sentences_per_good
+        self._selected = set()
+
+    def clean_cache(self):
+        self._best_sentences = []
+
+    def generate_input(self):
+        for _ in xrange(self._n_sentences_per_good):
+            sentence = self._sub_generator.generate_input()
+            # Avoid using the same sentence twice.
+            while id(sentence) in self._selected:
+                sentence = self._sub_generator.generate_input()
+            self._selected.add(id(sentence))
+            score = sum([self._scorer.score(sentence, i) for i in xrange(len(sentence))])
+            self._best_sentences.put((-score, sentence))
+        minus_score, sentence = self._best_sentences.get()
+        return sentence
+
+
+class NGramModelGenerator(InputGenerator):
+    def __init__(self, max_length, ngram_model):
+        self._max_length = max_length
+        self._ngram_model = ngram_model
+
+    def generate_input(self):
+        return self._ngram_model.generate_sentence(self._max_length)
+

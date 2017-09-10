@@ -24,6 +24,8 @@ class NGramModel(object):
         self._trigram_counts, self._bigram_counts, self._unigram_counts, self._token_count = self._train(numbers_sentences)
         self._train_sentences_count = sum([count for bigram, count in self._bigram_counts.iteritems()
                                      if bigram[0] == self._begin_token])
+        assert self._train_sentences_count == sum([count for trigram, count in self._trigram_counts.iteritems()
+                                                   if trigram[:2] == (self._begin_token, self._begin_token)])
         self._lambda1 = lambda1
         self._lambda2 = lambda2
 
@@ -120,14 +122,9 @@ class NGramModel(object):
         the current counts and a linear interpolation
         """
         eval_dataset = self._map_sentences(dataset)
-        ### YOUR CODE HERE
-        lambda3 = 1 - self._lambda1 - self._lambda2
         # Enforce self._lambda3 > 0, to avoid sentences with probability 0 due to rare bi-grams.
-        assert self._lambda1 >= 0 and self._lambda2 >= 0 and lambda3 > 0
         eval_token_count = 0
 
-        assert self._train_sentences_count == sum([count for trigram, count in self._trigram_counts.iteritems()
-                                             if trigram[:2] == (self._begin_token, self._begin_token)])
         sum_log = 0
         for sentence in eval_dataset:
             assert self._begin_token == sentence[0] and self._begin_token == sentence[1] and self._stop_token == sentence[-1]
@@ -141,7 +138,6 @@ class NGramModel(object):
                 sum_log += np.log2(prob)
 
         perplexity = 2 ** (-1. / eval_token_count * sum_log)
-        ### END YOUR CODE
         return perplexity
 
     def generate_word(self, prefix):
