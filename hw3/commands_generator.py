@@ -30,7 +30,7 @@ def command(words, strategy, l2_weight, loss_improvement,
         batch_size = 700
         first_random = 6000
     else:
-        max_queries = 150000
+        max_queries = 80000
         batch_size = 2500
         first_random = 10000
     return FORMAT.format(original_model_fname, 4., l2_weight, loss_improvement, minimal_frequency, max_queries,
