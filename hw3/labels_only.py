@@ -14,12 +14,17 @@ sys.path.insert(0, ROOT_DIR)
 from hw3.classifiers import sparse_logistic_regression
 from hw3 import memm
 from hw3 import inputs_generator
+from hw3 import randomizers
 from hw3 import data
 from hw3 import utils
 from hw3 import model_interface
 
 # found "SEQUENTIAL", "IID_WORDS", to be inefficient.
-STRATEGIES = ["UNIGRAMS", "MAX_SIGNIFICANCE", "FROM_TRAIN_SET", "MAX_GRADIENT", "MAX_ENTROPY"] # "SEQUENTIAL", "IID_WORDS",
+STRATEGIES = ["UNIGRAMS", "MAX_SIGNIFICANCE", "FROM_TRAIN_SET", "MAX_GRADIENT", "MAX_ENTROPY",
+              "MAX_ENTROPY_FROM_TRAIN_SET", "MAX_GRADIENT_FROM_TRAIN_SET",
+              "LANGUAGE_MODEL", "MAX_ENTROPY_LANGUAGE_MODEL", "MAX_GRADIENT_LANGUAGE_MODEL",
+              ""]
+
 
 
 def w_l2_distance(w1, w2):
@@ -174,6 +179,9 @@ def main():
     assert os.path.sep not in args.original_model_file_name
     assert os.path.sep not in args.stolen_model_file_name
 
+    print ' '.join(sys.argv)
+    print args
+
     words = memm.top_words(DATA_PATH, args.minimal_frequency, args.num_words)
     assert len(set(words)) == len(words) == args.num_words
     dict_vectorizer = memm.get_dict_vectorizer(DATA_PATH, None, args.minimal_frequency)
@@ -192,19 +200,19 @@ def main():
 
     stolen_model = sparse_logistic_regression.SparseBinaryLogisticRegression(10, shape[0], shape[1])
     iid_generator = inputs_generator.GreedyInputsGenerator(length_generator,
-                                                           inputs_generator.RandomizeByFrequenciesIIDFromDict(
+                                                           randomizers.RandomizeByFrequenciesIIDFromDict(
                                                                    {w: 1 for w in words}),
                                                            inputs_generator.TrivialInputScorer(), 1)
     first_senteneces_generator = iid_generator
     train_freq = memm.get_train_count(DATA_PATH)
     train_freq_clipped = {w: train_freq[w] for w in words}
-    proportional_words_randomizer = inputs_generator.RandomizeByFrequencyProportionaly(
+    proportional_words_randomizer = randomizers.RandomizeByFrequencyProportionaly(
             train_freq_clipped, 1.05)
     if args.strategy == "UNIGRAMS":
         scorer = inputs_generator.TrivialInputScorer()
         sentences_generator = inputs_generator.GreedyInputsGenerator(length_generator,
                                                                      proportional_words_randomizer,
-                                                                     scorer, 10)
+                                                                     scorer, 1)
     if args.strategy == "MAX_SIGNIFICANCE":
         scorer = inputs_generator.SubtleDecision(dict_vectorizer, stolen_model, original_interface)
         sentences_generator = inputs_generator.GreedyInputsGenerator(length_generator,

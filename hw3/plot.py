@@ -39,14 +39,14 @@ def rows_data(files_names, rows_headers):
     return res
 
 
-title_pattern = re.compile(".*words(\\d+).*lossimpr([^_]+).*0_(.+)\\.txt")
+title_pattern = re.compile(".*words(\\d+)_l2_weight([^_]+).*lossimpr([^_]+).*0_(.+)\\.txt")
 
 
 def simplify_title(title):
     l = title_pattern.findall(title)
     assert len(l) == 1
-    words, improvement, method = l[0]
-    return "method={},Words={},impr={}".format(method, words, improvement)
+    words, reg_coef, improvement, method = l[0]
+    return "{},#W={},impr={},reg={}".format(method, words, improvement, reg_coef)
 
 
 def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
@@ -59,12 +59,14 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
         print y
         ax.plot(x, y, '--+', label=title, color=color)
     ax.set_xlabel(xlabel)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(8)
     ax.set_ylabel(ylabel)
     # Shrink current axis by 20%
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.3, box.height])
+    ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
 
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 6})
 
 
 def main():

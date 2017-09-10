@@ -1,12 +1,13 @@
 import collections
 import unittest
 from hw3 import inputs_generator
+from hw3 import randomizers
 
 
 class TestRandomizeByFrequencies(unittest.TestCase):
     def test_randomize(self):
         freq = collections.Counter(['a', 'b', 'b'])
-        randomizer = inputs_generator.RandomizeByFrequenciesIIDFromArray(freq)
+        randomizer = randomizers.RandomizeByFrequenciesIIDFromArray(freq)
         elements = [randomizer.random_element() for i in xrange(2 ** 14)]
         randomizer.selected_elements(elements)  # Practically not required, here for completeness
         c = collections.Counter(elements)
@@ -19,16 +20,16 @@ class TestRandomizeByFrequencies(unittest.TestCase):
         freq = collections.Counter(['a', 'b', 'b'])
         RATIO = 1.1
         for j in xrange(20):
-            randomizer = inputs_generator.RandomizeByFrequencyProportionaly(freq, RATIO)
+            my_randomizer = randomizers.RandomizeByFrequencyProportionaly(freq, RATIO)
             d = collections.Counter()
             for i in xrange(10):
-                x = randomizer.random_element()
-                randomizer.selected_elements([x])
+                x = my_randomizer.random_element()
+                my_randomizer.selected_elements([x])
                 d[x] += 1
 
             for i in xrange(20):
-                x = randomizer.random_element()
-                randomizer.selected_elements([x])
+                x = my_randomizer.random_element()
+                my_randomizer.selected_elements([x])
                 d[x] += 1
                 ratio = (d[x] - 1) / float(sum(d.values()))
                 freq_ratio = freq[x] / float(sum(freq.values()))
