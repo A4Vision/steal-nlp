@@ -103,6 +103,7 @@ ENV/
 # Data files.
 data/
 outputs/
+outputs2/
 runs/
 *.conll
 *.pkl

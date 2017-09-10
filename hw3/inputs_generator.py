@@ -122,7 +122,7 @@ class MaximalGradient(ScoreByCheating):
         :return:
         """
         probs_vec = self._probs_vec(sentence, i)
-        return -np.sum(probs_vec ** 2)
+        return np.sum(probs_vec ** 2)
 
     def inform_queried_with(self, sentence):
         pass
@@ -234,6 +234,13 @@ class RandomizeByFrequencyProportionaly(Randomizer):
 
 
 def dict_argmax(d):
+    """
+    Key with highest corresponding value.
+    Args:
+        d:
+    Returns:
+
+    """
     return max((v, k) for k, v in d.items())[1]
 
 

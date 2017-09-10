@@ -57,7 +57,7 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
         print len(x), len(y)
         print x
         print y
-        ax.plot(x, y, label=title, color=color)
+        ax.plot(x, y, '--+', label=title, color=color)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     # Shrink current axis by 20%
@@ -68,16 +68,22 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
 
 
 def main():
-    dirname = sys.argv[1]
-    assert os.path.isdir(dirname)
-    files = glob.glob(dirname + "/*.txt")
+    pattern = sys.argv[1]
+    assert pattern.endswith("txt")
+    files = glob.glob(pattern)
+    print pattern
+    print files
+    dirname = os.path.dirname(files[0])
+    assert all(os.path.dirname(f) == dirname for f in files)
+
     x_name = "Single word queries amounts"
     ys_names = ("unique_words_amounts",
                 "accuracies", "l2 distances", "validation KL")
-    colors = ["red", "green", "blue", "orange", "black", "purple"] * 4
+    colors = ["red", "green", "blue", "orange", "black", "purple", "magenta", "cyan", "yellow", "gray"] * 4
     assert len(colors) >= len(ys_names)
     data = rows_data(files, ys_names + (x_name,))
     valid_filenames = sorted(set(sum([v.keys() for v in data.values()], [])))
+    print valid_filenames
     title2color = dict(zip(valid_filenames, colors))
     for plot_type, color in zip(ys_names, colors):
         plt.clf()
@@ -85,7 +91,9 @@ def main():
         titles, ys_lists = zip(*data.get(plot_type, {}).iteritems())
         xs = [data.get(x_name, {})[title] for title in titles]
         titles_simple = map(simplify_title, titles)
-        plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, [title2color[t] for t in titles])
+        plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, [title2color[t] for t in titles
+                                                                       if t in valid_filenames])
+
         plt.savefig(dirname + "/" + plot_type + ".png")
 
 

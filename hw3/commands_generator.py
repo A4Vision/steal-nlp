@@ -36,10 +36,10 @@ def main():
     args = parser.parse_args(sys.argv[1:])
     commands = []
 
-    for words in range(1000, 3001, 500):
+    for words in [2000, 3000]:
         for strategy in labels_only.STRATEGIES:
-            for l2_weight in [0.0]:
-                for loss_improvement in [1e-2, 1e-3]:
+            for l2_weight in [0.0, 1e-5]:
+                for loss_improvement in [1e-2,]:
                     command_line = command(words, strategy, l2_weight, loss_improvement,
                                            "all_freq{}_my.pkl".format(args.freq), args.freq)
                     commands.append(command_line)
