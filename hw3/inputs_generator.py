@@ -262,7 +262,7 @@ class SelectFromOtherInputsGenerator(InputGenerator):
         self._selected = set()
 
     def clean_cache(self):
-        self._best_sentences = []
+        self._best_sentences = Queue.PriorityQueue()
 
     def generate_input(self):
         for _ in xrange(self._n_sentences_per_good):

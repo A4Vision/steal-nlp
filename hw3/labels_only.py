@@ -91,6 +91,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             sent_probs, tagged_sentence = original_model_interface.predict_proba(sentence)
             new_probs.append(sent_probs)
             new_tagged_sentences.append(tagged_sentence)
+        print 'set(x.shape for x in new_probs)', set(x.shape for x in new_probs)
         new_probs, new_sparse_features, new_predictios = memm.transform_input_for_training(
             dict_vectorizer, new_probs, new_tagged_sentences)
         all_training_predictions.append(new_predictios)
