@@ -65,8 +65,8 @@ class ModelInterface(object):
     def predict_proba_fast(self, sentence):
         assert self._sentences_filter(sentence)
         long_sentence = sentence + [ModelInterface.END]
-        # tags, cached_probs = self._fill_prev_tags(sentence)
-        tags, cached_probs = [''] * len(sentence), None
+        tags, cached_probs = self._fill_prev_tags(sentence)
+        # tags, cached_probs = [''] * len(sentence), None
         tagged_sentence = map(list, zip(sentence, tags))
 
         all_probs = []
