@@ -51,7 +51,7 @@ def main():
             for l2_weight in [0.0, 1e-7]:
                 for loss_improvement in [1e-2, ]:
                     command_line = command(words, strategy, l2_weight, loss_improvement,
-                                           "all_freq{}_my.pkl".format(args.freq), args.freq, args.is_dmeo)
+                                           "all_freq{}_my.pkl".format(args.freq), args.freq, args.is_demo)
                     commands.append(command_line)
 
     n_jobs = args.jobs_per_file
