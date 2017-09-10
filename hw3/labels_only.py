@@ -153,7 +153,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
     print 'l2 distances'
     print l2_distances
     print 'w l2 norm'
-    print l2_distances
+    print w_norms
     print 'validation KL'
     print validation_kl_values
     print 'W shape:'
