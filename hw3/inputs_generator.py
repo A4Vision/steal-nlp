@@ -271,7 +271,7 @@ class SelectFromOtherInputsGenerator(InputGenerator):
             while id(sentence) in self._selected:
                 sentence = self._sub_generator.generate_input()
             self._selected.add(id(sentence))
-            score = sum([self._scorer.score(sentence, i) for i in xrange(len(sentence))])
+            score = sum([self._scorer.score(sentence, i) for i in xrange(len(sentence))]) / len(sentence)
             self._best_sentences.put((-score, sentence))
         minus_score, sentence = self._best_sentences.get()
         return sentence
@@ -283,5 +283,7 @@ class NGramModelGenerator(InputGenerator):
         self._ngram_model = ngram_model
 
     def generate_input(self):
-        return self._ngram_model.generate_sentence(self._max_length)
-
+        s = self._ngram_model.generate_sentence(self._max_length)
+        while len(s) == 0:
+            s = self._ngram_model.generate_sentence(self._max_length)
+        return s

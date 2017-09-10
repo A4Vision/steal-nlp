@@ -81,6 +81,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         else:
             sentences_generator.clean_cache()
             new_sentences = [sentences_generator.generate_input() for _ in xrange(batch_size)]
+        new_sentences = [s for s in new_sentences if len(s) > 0]
         for s in new_sentences:
             all_words_queried.update(s)
             single_word_queries_amount += len(s)
