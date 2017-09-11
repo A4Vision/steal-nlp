@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as S
 from hw3 import utils
 
 
@@ -59,7 +60,7 @@ class SparseBinaryLogisticRegression(object):
 
     def epoch_optimize(self, data, labels, batch_size, eta, reg_coef):
         # print 'type(data) 1', type(data)
-        for batch_data, batch_labels in utils.iter_batches(batch_size, np.array(data), labels):
+        for batch_data, batch_labels in utils.iter_batches(batch_size, data, labels):
             self.batch_optimize_loss(batch_data, batch_labels, eta, reg_coef)
 
     def loss(self, data, labels, reg_coef):
@@ -89,6 +90,7 @@ class SparseBinaryLogisticRegression(object):
 
     def set_w(self, w):
         assert w.shape == self._w.shape
+        assert w.dtype == self._w.dtype
         self._w_global_mul = 1.
         self._w = w.copy()
 

@@ -124,7 +124,7 @@ class MaximalGradient(ScoreByCheating):
         :return:
         """
         probs_vec = self._probs_vec(sentence, i)
-        return np.sum(probs_vec ** 2)
+        return -np.sum(probs_vec ** 2)
 
     def inform_queried_with(self, sentence):
         pass
@@ -169,6 +169,14 @@ class InputGenerator(object):
 
     def clean_cache(self):
         pass
+
+    def generate_many_inputs(self, total_length):
+        res = []
+        while total_length > 0:
+            sentence = self.generate_input()
+            total_length -= len(sentence)
+            res.append(sentence)
+        return res
 
 
 class GreedyInputsGenerator(InputGenerator):
@@ -263,6 +271,7 @@ class SelectFromOtherInputsGenerator(InputGenerator):
 
     def clean_cache(self):
         self._best_sentences = Queue.PriorityQueue()
+        self._selected.clear()
 
     def generate_input(self):
         for _ in xrange(self._n_sentences_per_good):

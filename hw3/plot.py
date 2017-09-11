@@ -51,7 +51,7 @@ def simplify_title(title):
 
 def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
     my_dpi = 96
-    fig = plt.figure(figsize=(800 / my_dpi, 800 / my_dpi), dpi=my_dpi)
+    fig = plt.figure(figsize=(1200 / my_dpi, 800 / my_dpi), dpi=my_dpi)
     ax = plt.subplot(111)
 
     for title, color, y, x in zip(titles, colors, ys_lists, xs):
@@ -81,7 +81,8 @@ def main():
 
     x_name = "Single word queries amounts"
     ys_names = ("unique_words_amounts",
-                "accuracies", "l2 distances", "validation KL")
+                "accuracies", "l2 distances", "validation KL", "w l2 norm",
+                "current training losses")
     colors = ["red", "green", "blue", "orange", "black", "purple", "magenta", "cyan", "yellow", "gray"] * 4
     assert len(colors) >= len(ys_names)
     data = rows_data(files, ys_names + (x_name,))

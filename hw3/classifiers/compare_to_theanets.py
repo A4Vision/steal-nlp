@@ -1,5 +1,6 @@
 import tempfile
 import scipy.sparse as S
+import scipy
 import theanets
 import numpy as np
 from hw3 import utils
@@ -158,9 +159,58 @@ def test_data_to_arrays():
     assert t.tolist() == [x[:3] for x in data]
 
 
+def measure_my_model():
+    input_size = 18000
+    output_size = 45
+    sparisty = 10
+    batch = 50
+    model = sparse_logistic_regression.SparseBinaryLogisticRegression(10, input_size, output_size)
+    data = np.array([np.random.randint(0, input_size, np.random.randint(sparisty - 3, sparisty)) for i in xrange(10000)])
+
+    x = S.lil_matrix((len(data), input_size), dtype=np.float32)
+    for i, r in enumerate(data):
+        x[i, r] = 1
+    x = x.tocsr()
+    model.set_w(np.float32(np.random.random(size=model.w().shape)))
+    labels = np.random.randint(0, output_size, size=len(data))
+    M = 11
+    print M + np.log2(batch * 10 * 45)
+    t = utils.Timer("predict_proba")
+    for i in xrange(2 ** M):
+        l = np.random.randint(0, len(data), batch)
+        probs = model.predict_proba(data[l])
+    t.start_part("optimize")
+    for i in xrange(2 ** M):
+        l = np.random.randint(0, len(data), batch)
+        model.batch_optimize_loss(data[l], labels[l], 4, 1e-4)
+    print t
+
+
+def check_sparse_multiplication():
+    input_size = 18000
+    output_size = 45
+    sparisty = 10
+    w = np.random.random(size=(input_size, output_size))
+    data = np.array([np.random.randint(0, input_size, np.random.randint(sparisty - 3, sparisty)) for i in xrange(2 ** 6)])
+    x = S.csr_matrix((len(data), input_size))
+
+    for i, r in enumerate(data):
+        for j in r:
+            x[i, j] = 1
+    M = 14
+    print np.log2(x.nnz * 45) + M
+    t = utils.Timer("sparse mult")
+    for i in xrange(2 ** M):
+        res = x.dot(w)
+    print t
+    print res.shape
+
+
 if __name__ == '__main__':
     # compare_classifier_with_my_optimization()
-    compare_classifier_with_my()
+    # compare_classifier_with_my()
     # test_data_to_arrays()
     # test_optimization()
     # test_save_load()
+    measure_my_model()
+    # check_sparse_multiplication()

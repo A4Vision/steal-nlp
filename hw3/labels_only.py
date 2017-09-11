@@ -57,6 +57,7 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
     assert validation_probs.shape[0] == len(validation_predictions)
     l2_distances = []
     w_norms = []
+    w_norm_percent_from_loss = []
     validation_kl_values = []
     queries_amounts = []
     unique_words_amounts = []
@@ -71,16 +72,19 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
 
     single_word_queries_amount = 0
     previous_stolen_w = stolen_model.w()
+    timer = utils.Timer("global")
     for batch_size in batches_sizes:
         if single_word_queries_amount >= maximal_queries_amount:
             break
         print 'generating ', batch_size, 'sentences...'
         if single_word_queries_amount == 0:
             print 'first sentences generation'
-            new_sentences = [first_senteneces_generator.generate_input() for _ in xrange(batch_size)]
+            new_sentences = first_senteneces_generator.generate_many_inputs(batch_size)
         else:
             sentences_generator.clean_cache()
-            new_sentences = [sentences_generator.generate_input() for _ in xrange(batch_size)]
+            timer.start_part("smart generation")
+            new_sentences = sentences_generator.generate_many_inputs(batch_size)
+            timer.start_part("global")
         new_sentences = [s for s in new_sentences if len(s) > 0]
         for s in new_sentences:
             all_words_queried.update(s)
@@ -92,7 +96,6 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
             sent_probs, tagged_sentence = original_model_interface.predict_proba(sentence)
             new_probs.append(sent_probs)
             new_tagged_sentences.append(tagged_sentence)
-        print 'set(x.shape for x in new_probs)', set(x.shape for x in new_probs)
         new_probs, new_sparse_features, new_predictios = memm.transform_input_for_training(
             dict_vectorizer, new_probs, new_tagged_sentences)
         all_training_predictions.append(new_predictios)
@@ -100,27 +103,31 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         all_training_indices += [[int(x) for x in vec.indices if vec[0, x]] for vec in new_sparse_features]
         training_losses = []
         start_time = time.time()
-
+        timer.start_part("optimization")
+        all_training_indices_arr = np.array(all_training_indices)
         for i in xrange(1, 10000):
-            current_eta = eta / i ** 0.3
-            stolen_model.epoch_optimize(all_training_indices, np.concatenate(all_training_predictions), 50, current_eta,
+            current_eta = eta / i ** 0.1
+            stolen_model.epoch_optimize(all_training_indices_arr, np.concatenate(all_training_predictions), 100, current_eta,
                                         l2_weight)
             stolen_model.set_w(utils.minimize_rows_norm(stolen_model.w()))
-            if i % 20 == 0:
-                print 'eta=', current_eta
+            if i % 10 == 0:
+                print i, 'eta=', current_eta
                 accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
                 print 'validation accuracy', accuracy
                 train_loss = stolen_model.loss(all_training_indices, np.concatenate(all_training_predictions),
                                                l2_weight)
                 print 'training_loss', train_loss
                 training_losses.append(train_loss)
-                if time.time() - start_time > 3600:
+                # Twenty minutes per optimization problem.
+                if time.time() - start_time > 1200:
                     print 'Training time exceeded, breaking'
                     break
-                if len(training_losses) > 10 and train_loss + loss_improvement > np.average(training_losses[-10:-1]):
+                if len(training_losses) > 10 and train_loss * (1 + loss_improvement) > np.average(training_losses[-10:-1]):
                     print 'Training loss stopped improving, breaking'
                     break
+
         print 'Optimization time: {}seconds'.format(time.time() - start_time)
+        timer.start_part("global")
 
         validation_kl = np.average(scipy.stats.entropy(stolen_model.predict_proba(validation_indices).T,
                                                        validation_probs.T))
@@ -135,6 +142,8 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         l2_distances.append(average_l2_distance)
         w_norms.append(l2_norm(stolen_w))
 
+        w_norm_percent_from_loss.append(l2_norm(stolen_w) * l2_weight / train_loss)
+
         accuracy = np.average(stolen_model.predict(validation_indices) == validation_predictions)
         accuracies.append(accuracy)
 
@@ -145,6 +154,9 @@ def experiment(stolen_model_fname, original_model_interface, dict_vectorizer, st
         print training_losses
     # stolen_model.save(os.path.join(DATA_PATH, "{}_queries{}.pkl".format(stolen_model_fname, single_word_queries_amount)))
 
+    print timer
+    print 'norm percent from loss'
+    print w_norm_percent_from_loss
     print 'unique_words_amounts'
     print unique_words_amounts
     print 'Single word queries amounts'
@@ -279,7 +291,7 @@ def main():
 
     LENGTH = 25
     length_generator = inputs_generator.constant_generator(LENGTH)
-    batches_sizes = [args.first_random / LENGTH] + [args.batch_size / LENGTH] * (
+    batches_sizes = [args.first_random] + [args.batch_size] * (
         (args.total_queries_amount - args.first_random) // args.batch_size)
 
     shape = original_model.w().shape
