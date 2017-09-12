@@ -34,7 +34,7 @@ def experiment(stolen_model_fname, original_model_interface, data_preprocess, st
     assert isinstance(sentences_generator, inputs_generator.InputGenerator)
     assert ".pkl" not in stolen_model_fname
     print "Loading data"
-    dev_size = 200
+    dev_size = 800
 
     data_accumulator = model_training_utils.TrainingDataAccumulator(original_model_interface.dict_vectorizer(),
                                                                     original_model_interface)
