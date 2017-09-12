@@ -125,6 +125,7 @@ class BatchDataIterator(object):
                 first = False
             else:
                 self._sentences_generator.clean_cache()
+                print 'generating new sentences...'
                 new_sentences = self._sentences_generator.generate_many_inputs(batch_size)
             new_sentences = [s for s in new_sentences if len(s) > 0]
             for s in new_sentences:

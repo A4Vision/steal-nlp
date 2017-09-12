@@ -45,9 +45,10 @@ def experiment(stolen_model_fname, original_model_interface, data_preprocess, st
     print "Creating input for training"
     statistics = model_training_utils.StatisticsLogger(dev_indices, dev_probs, dev_labels)
 
-    timer = utils.Timer("global")
     data_iterator = model_training_utils.BatchDataIterator(sentences_generator, first_senteneces_generator)
+    timer = utils.Timer("sentences generation")
     for new_sentences in data_iterator.generate_data(batches_sizes):
+        timer.start_part("query")
         data_accumulator.query(new_sentences)
         training_losses = []
         start_time = time.time()
@@ -58,7 +59,7 @@ def experiment(stolen_model_fname, original_model_interface, data_preprocess, st
                                         l2_weight)
             stolen_model.minimize_norm()
             if i % 10 == 0:
-                print i, 'eta=', current_eta
+                print 'epoch=', i, 'eta=', current_eta
                 accuracy = np.average(stolen_model.predict(dev_indices) == dev_labels)
                 print 'validation accuracy', accuracy
                 train_loss = stolen_model.loss(data_accumulator.indices(), data_accumulator.labels(), l2_weight)
@@ -74,15 +75,16 @@ def experiment(stolen_model_fname, original_model_interface, data_preprocess, st
                     break
 
         print 'Optimization time: {}seconds'.format(time.time() - start_time)
-        timer.start_part("global")
+        timer.start_part("log state")
         statistics.log_state(stolen_model, original_model_interface, l2_weight, train_loss, data_iterator.nqueries(),
                              data_iterator.n_unique_words())
         print 'current training losses'
         print training_losses
+        timer.start_part("sentences generation")
 
     # stolen_model.save(os.path.join(DATA_PATH, "{}_queries{}.pkl".format(stolen_model_fname, single_word_queries_amount)))
-
     print timer
+    statistics.print_logged_data()
     print END_MESSAGE
 
 
@@ -135,13 +137,13 @@ def create_sentences_generators(args, stolen_model, length_generator,
     # Switch(args.strategy) --> create sentences_generator according to the selected strategy.
     if args.strategy == "BEAM_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        trivial_scorer, 100, 3, 2, 20, 30)
+                                                                        trivial_scorer, 100, 3, 3, 20, 30)
     elif args.strategy == "BEAM_MAX_ENTROPY_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        max_entropy_scorer, 100, 3, 2, 20, 30)
+                                                                        max_entropy_scorer, 100, 3, 3, 20, 30)
     elif args.strategy == "BEAM_MAX_GRADIENT_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        max_gradient_scorer, 100, 3, 2, 20, 30)
+                                                                        max_gradient_scorer, 100, 3, 3, 20, 30)
     elif args.strategy == "FROM_TRAIN_SET_MAX_ENTROPY":
         sentences_generator = inputs_generator.SelectFromOtherInputsGenerator(
             train_set_generator, max_entropy_scorer, 10)
