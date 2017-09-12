@@ -18,7 +18,7 @@ class OutputParser(object):
         self._lines = self._content.splitlines()
 
     def is_done(self):
-        return 'W shape:' in self._content
+        return 'Labels Only Experiment Done' in self._content
 
     def data_of_row(self, row_header):
         if row_header in self._lines:
@@ -94,6 +94,7 @@ def main():
         plt.cla()
         titles, ys_lists = zip(*data.get(plot_type, {}).iteritems())
         xs = [data.get(x_name, {})[title] for title in titles]
+        # TODO(bugabuga): read all the parameters from the output file.
         titles_simple = map(simplify_title, titles)
         plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, [title2color[t] for t in titles
                                                                        if t in valid_filenames])

@@ -11,14 +11,15 @@ class SparseBinaryLogisticRegression(object):
     def __init__(self, data_sparsity, n_features, output_size):
         self._output_size = output_size
         self._n_features = n_features
+        # TODO(bugabuga): Remove data sparsity parameter.
+        # Originally - it was meant to be used for optimization tuning.
         self._data_sparsity = data_sparsity
 
         self._b = np.zeros(output_size, dtype=np.float32)
-        self._w = np.float32(np.random.random((n_features, output_size))) * 0.001
+        self._w = np.array(np.random.random((n_features, output_size)) * 0.001, dtype=np.float32)
         self._w_global_mul = 1.
 
     def update_w(self):
-        print 'updating w !!!'
         self.set_w(self.w())
 
     def _data_to_arrays(self, data, labels):
@@ -90,9 +91,10 @@ class SparseBinaryLogisticRegression(object):
 
     def set_w(self, w):
         assert w.shape == self._w.shape
-        assert w.dtype == self._w.dtype
+        assert w.dtype in (np.float32, np.float64)
         self._w_global_mul = 1.
-        self._w = w.copy()
+        # Copy and set dtype to float32
+        self._w = np.array(w, dtype=np.float32)
 
     def w_norm(self):
         return np.sum(self.w() ** 2)
@@ -126,6 +128,9 @@ class SparseBinaryLogisticRegression(object):
         else:
             with open(file_or_path, "rb") as f:
                 return SparseBinaryLogisticRegression.load(f)
+
+    def minimize_norm(self):
+        self.set_w(utils.minimize_rows_norm(self.w()))
 
 
 def softmax_rows(x):

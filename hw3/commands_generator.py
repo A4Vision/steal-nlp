@@ -19,22 +19,25 @@ def parameterize_file_name(args, file_name):
 
 def command(words, strategy, l2_weight, loss_improvement,
             original_model_fname, minimal_frequency, is_demo):
-    FORMAT = "nohup python hw3/labels_only.py --original_model_file_name={0} --stolen_model_file_name=stolen_words{" \
-             "8}_method{7}_l2_weight{2}_impr{3} --eta={1} " \
-             "--l2_weight={2} --loss_improvement={3} --minimal_frequency={4} --total_queries_amount={5} " \
-             "--batch_size={6} " \
-             "--strategy={7} --first_random={9} --num_words={8} >& ~/outputs/output_labels_only_freq{4}_words{" \
-             "8}_l2_weight{2}_lossimpr{3}_eta{1}_{7}.txt & "
+    COMMAND = "nohup python hw3/labels_only.py --original_model_file_name={0} --stolen_model_file_name=stolen_words{" \
+              "8}_method{7}_l2_weight{2}_impr{3} --eta={1} " \
+              "--l2_weight={2} --loss_improvement={3} --minimal_frequency={4} --total_queries_amount={5} " \
+              "--batch_size={6} " \
+              "--strategy={7} --first_random={9} --num_words={8} "
+    FORWARD_OUTPUT = ">& ~/outputs/output_labels_only_freq{4}_words{" \
+                     "8}_l2_weight{2}_lossimpr{3}_eta{1}_{7}.txt & "
     if is_demo:
         max_queries = 7000
         batch_size = 700
         first_random = 6000
+        full_command = COMMAND
     else:
-        max_queries = 80000
-        batch_size = 2500
+        max_queries = 100000
+        batch_size = 5000
         first_random = 10000
-    return FORMAT.format(original_model_fname, 4., l2_weight, loss_improvement, minimal_frequency, max_queries,
-                         batch_size, strategy, words, first_random)
+        full_command = COMMAND + FORWARD_OUTPUT
+    return full_command.format(original_model_fname, 4., l2_weight, loss_improvement, minimal_frequency, max_queries,
+                               batch_size, strategy, words, first_random)
 
 
 def main():
@@ -49,7 +52,8 @@ def main():
     for words in [2000, 3000]:
         for strategy in labels_only.STRATEGIES:
             for l2_weight in [0.0, 1e-7]:
-                for loss_improvement in [1e-2, ]:
+                # Require 2% improvement in the training loss.
+                for loss_improvement in [0.02]:
                     command_line = command(words, strategy, l2_weight, loss_improvement,
                                            "all_freq{}_my.pkl".format(args.freq), args.freq, args.is_demo)
                     commands.append(command_line)

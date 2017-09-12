@@ -18,12 +18,12 @@ dev = map(data.untag, dev)
 
 model = ngram_model.NGramModel(train, 0.25, 0.55)
 
-print 'dev perplexity', model.evaluate_ngrams(dev)
+print 'dev perplexity', model.sentences_perplexity(dev)
 
 sentences = [model.generate_sentence(30) for i in xrange(10)]
 for s in sentences:
     print s
-print model.evaluate_ngrams(sentences)
+print model.sentences_perplexity(sentences)
 
 
 sys.exit(0)
@@ -58,7 +58,7 @@ s_train = map(memm.untag, memm.preprocess_sent(counts, docs_train, 40))
 print 'docs_train[0]', docs_train[0]
 
 model2 = ngram_model.NGramModel(s_train, 0.33, 0.533)
-print model2.evaluate_ngrams(s_train)
+print model2.sentences_perplexity(s_train)
 
 docs_dev = load_dataset(DATA_PATH + '/lm/ptb-dev.txt')
 S_dev = map(memm.untag, memm.preprocess_sent(counts, docs_dev, 40))
@@ -68,6 +68,6 @@ for l1 in (0.1, 0.2, 0.3, 0.4):
         if l1 + l2 < 1:
             print l1, l2
             model2.set_lambda(l1, l2)
-            print model2.evaluate_ngrams(S_dev)
+            print model2.sentences_perplexity(S_dev)
 
 

@@ -1,3 +1,4 @@
+import scipy.sparse as S
 import time
 import collections
 import numpy as np
@@ -17,7 +18,6 @@ def experiment1_generate_training_examples(wrongly_tagged_sentences, original_mo
         list_of_all_probs.append(probs_vecs)
         tagged_sentences.append(model_tagged_sentence)
     return list_of_all_probs, tagged_sentences
-
 
 
 class Timer(object):
@@ -51,6 +51,7 @@ def convert_labels_to_one_hot(labels):
     z = np.zeros((len(labels), max(labels) + 1), dtype=np.float64)
     z[range(len(labels)), labels] = 1.
     return z
+
 
 def predict_from_regression(net, data):
     return np.argmax(net.predict(data), axis=1)
@@ -122,7 +123,47 @@ def invert_permutation(p):
     return s
 
 
+def dict_argmax(d):
+    """
+    Key with highest corresponding value.
+    Args:
+        d:
+    Returns:
+
+    """
+    return max(d, key=d.get)
+
+
+def csr_indices_slow(a):
+    return np.array([r.indices for r in a])
+
+
+def csr_indices(a):
+    """
+    Returns list of lists.
+    For each row in a, returns the list of nonzero indices.
+    like: [r.indices for r in a]
+    :param a:
+    :return:
+    """
+    return np.array([a.indices.__getslice__(*x) for x in
+            np.column_stack((a.indptr[:-1], a.indptr[1:]))])
+
+
+def compare_csr_indices():
+    N = 2 ** 9
+    v = S.csr_matrix((30, 18000), dtype=np.float32)
+    for i in xrange(v.shape[0]):
+        v[i, np.random.randint(0, v.shape[1], 10)] = 1.
+    assert (csr_indices(v) == csr_indices_slow(v)).all()
+    t = Timer("csr_indices")
+    for i in xrange(N):
+        x = csr_indices(v)
+    t.start_part("csr_indices_slow")
+    for i in xrange(N):
+        x = csr_indices_slow(v)
+    print t
+
 if __name__ == '__main__':
+    compare_csr_indices()
     test_iter_batches()
-
-

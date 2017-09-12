@@ -1,3 +1,5 @@
+import bisect
+
 import numpy as np
 from hw3 import memm
 from hw3 import utils
@@ -6,6 +8,7 @@ from hw3.classifiers import sparse_logistic_regression
 global_timer = utils.Timer("global_model_interface")
 cache_counter = 0
 prediction_counter = 0
+
 
 class ModelInterface(object):
     """
@@ -70,22 +73,25 @@ class ModelInterface(object):
         tagged_sentence = map(list, zip(sentence, tags))
 
         all_probs = []
+        # Greedily select the tag with the highest probability.
         for i in xrange(len(sentence)):
             if tags[i]:
                 all_probs.append(cached_probs[i])
                 continue
-            global_timer.start_part("extract_features")
+            # global_timer.start_part("extract_features")
             features = memm.extract_features(tagged_sentence, i)
-            global_timer.start_part("vectorize")
+            # global_timer.start_part("vectorize")
             vec_features = memm.vectorize_features(self._dict_vectorizer, features)
-            features_indices = [x for x in vec_features[0].indices if vec_features[0, x]]
-            global_timer.start_part("predict_proba")
+            vec_features.eliminate_zeros()
+            assert vec_features.shape[0] == 1
+            features_indices = vec_features.indices
+            # global_timer.start_part("predict_proba")
             probs = self._model.predict_proba([features_indices])[0]
-            key = tuple(long_sentence[:i + 2])
-            global_timer.start_part("global")
+            # global_timer.start_part("global")
             all_probs.append(probs)
             tag_index = np.argmax(probs)
             tagged_sentence[i][1] = tag = memm.index_to_tag_dict[tag_index]
+            key = tuple(long_sentence[:i + 2])
             self._cached_predictions[key] = tag
             self._cached_probs[key] = probs
 
@@ -113,3 +119,9 @@ class ModelInterface(object):
 
     def get_w(self):
         return self._model.w()
+
+    def dict_vectorizer(self):
+        return self._dict_vectorizer
+
+    def underlying_model(self):
+        return self._model

@@ -5,7 +5,7 @@ import numpy as np
 import theanets
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, ".."))
+ROOT_DIR = os.path.realpath(os.path.join(BASE_DIR, "..", '..'))
 DATA_PATH = os.path.join(BASE_DIR, "data")
 sys.path.insert(0, ROOT_DIR)
 

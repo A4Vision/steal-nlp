@@ -3,7 +3,7 @@ import sys
 import unittest
 import numpy as np
 from scipy import sparse
-sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from hw3 import sparse_gaussian
 
 

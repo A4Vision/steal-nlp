@@ -19,13 +19,19 @@ class RandomizeByFrequenciesIIDFromArray(Randomizer):
     def __init__(self, frequencies_array):
         assert isinstance(frequencies_array, np.ndarray)
         self._counts_comulative = np.cumsum(frequencies_array)
-        self._total = self._counts_comulative[-1]
+        self._total = float(self._counts_comulative[-1])
 
     def random_element(self):
         return np.searchsorted(self._counts_comulative, self._total * random.random())
 
     def selected_elements(self, elements):
         pass
+
+    def element_prob(self, element):
+        if element == 0:
+            return self._counts_comulative[0] / self._total
+        else:
+            return (self._counts_comulative[element] - self._counts_comulative[element - 1]) / self._total
 
 
 class RandomizeByFrequenciesIIDFromDict(Randomizer):
@@ -42,6 +48,9 @@ class RandomizeByFrequenciesIIDFromDict(Randomizer):
 
     def selected_elements(self, elements):
         pass
+
+    def element_prob(self, element):
+        return self._randomizer.element_prob(self._element_to_index[element])
 
 
 class RandomizeByFrequencyProportionaly(Randomizer):

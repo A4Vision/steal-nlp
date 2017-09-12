@@ -4,6 +4,8 @@ import Queue
 
 import scipy.stats
 import numpy as np
+
+import ngram_model
 from hw3 import model_interface
 from hw3 import utils
 from hw3 import randomizers
@@ -27,6 +29,9 @@ class InputScorer(object):
         :return:
         """
         raise NotImplementedError
+
+    def score_whole_sentence(self, sentence):
+        return sum(self.score(sentence, i) for i in xrange(len(sentence))) / len(sentence)
 
 
 class TrivialInputScorer(InputScorer):
@@ -72,11 +77,26 @@ class ScoreByCheating(InputScorer):
 
     def _probs_vec(self, sentence, i):
         tagged_sentence = self._generate_tagged_prefix(sentence, i)
+        return self._probs_vec_for_tagged_sentence(tagged_sentence, i)
+
+    def _probs_vecs_for_whole_sentence(self, sentence):
+        tagged_sentence = self._real_model.predict(sentence)
+        features_vecs = [memm.extract_features(tagged_sentence, i) for i in xrange(len(tagged_sentence))]
+        v = self._dict_vectorizer.transform(features_vecs)
+        v.eliminate_zeros()
+        indices = utils.csr_indices(v)
+        probs_vecs = self._local_model.predict_proba(indices)
+        return probs_vecs
+
+    def _probs_vec_for_tagged_sentence(self, tagged_sentence, i):
         features_vec = memm.extract_features(tagged_sentence, i)
         v = self._dict_vectorizer.transform(features_vec)
         indices = [x for x in v[0].indices if v[0, x]]
         probs_vec = self._local_model.predict_proba([indices])[0]
         return probs_vec
+
+    def _cheat_get_tags(self, sentence):
+        return self._real_model.predict(sentence)
 
 
 # These two scoring strategies optimize only for the information held in the feature
@@ -96,6 +116,11 @@ class MaxEntropy(ScoreByCheating):
     def inform_queried_with(self, sentence):
         pass
 
+    def score_whole_sentence(self, sentence):
+        probs = self._probs_vecs_for_whole_sentence(sentence)
+        # entropy() calculates entropy of each column.
+        return scipy.stats.entropy(probs.T).sum() / len(sentence)
+
 
 # Note: here, we ignore the requirement of having an easy decision for the model without the current word.
 class SubtleDecision(ScoreByCheating):
@@ -114,6 +139,11 @@ class SubtleDecision(ScoreByCheating):
     def inform_queried_with(self, sentence):
         pass
 
+    def score_whole_sentence(self, sentence):
+        probs = self._probs_vecs_for_whole_sentence(sentence)
+        top2 = np.array([utils.top_k(p, 2) for p in probs])
+        return -np.abs(np.diff(top2)).sum() / len(sentence)
+
 
 class MaximalGradient(ScoreByCheating):
     def score(self, sentence, i):
@@ -128,6 +158,10 @@ class MaximalGradient(ScoreByCheating):
 
     def inform_queried_with(self, sentence):
         pass
+
+    def score_whole_sentence(self, sentence):
+        probs = self._probs_vecs_for_whole_sentence(sentence)
+        return -np.sum(probs ** 2) / len(sentence)
 
 
 class SelectWordsUniformly(InputScorer):
@@ -149,15 +183,7 @@ class SelectWordsUniformly(InputScorer):
         self._selected_counter.update(sentence)
 
 
-def dict_argmax(d):
-    """
-    Key with highest corresponding value.
-    Args:
-        d:
-    Returns:
 
-    """
-    return max((v, k) for k, v in d.items())[1]
 
 
 class InputGenerator(object):
@@ -202,7 +228,7 @@ class GreedyInputsGenerator(InputGenerator):
             for word in words:
                 sentence[i] = word
                 scores[word] = self._scorer.score(sentence, i)
-            sentence[i] = dict_argmax(scores)
+            sentence[i] = utils.dict_argmax(scores)
         # Inform scorer and randomizer about our selections.
         self._word_randomizer.selected_elements(sentence)
         self._scorer.inform_queried_with(sentence)
@@ -233,10 +259,11 @@ class SequentialInputsGenerator(InputGenerator):
 
 
 class SubsetInputsGenerator(InputGenerator):
-    def __init__(self, sentences):
+    def __init__(self, sentences, shuffle=True):
         self._sentences = list(sentences)
         assert len(self._sentences) > 0
-        random.shuffle(self._sentences)
+        if shuffle:
+            random.shuffle(self._sentences)
         self._index = 0
         self._iterations = 0
 
@@ -280,7 +307,7 @@ class SelectFromOtherInputsGenerator(InputGenerator):
             while id(sentence) in self._selected:
                 sentence = self._sub_generator.generate_input()
             self._selected.add(id(sentence))
-            score = sum([self._scorer.score(sentence, i) for i in xrange(len(sentence))]) / len(sentence)
+            score = self._scorer.score_whole_sentence(sentence)
             self._best_sentences.put((-score, sentence))
         minus_score, sentence = self._best_sentences.get()
         return sentence
@@ -296,3 +323,64 @@ class NGramModelGenerator(InputGenerator):
         while len(s) == 0:
             s = self._ngram_model.generate_sentence(self._max_length)
         return s
+
+
+class BeamSearchInputGenerator(InputGenerator):
+    """
+    Generates sentences such that the words are super-uniformly distributed.
+    """
+    # TODO(bugabuga): generate using one model, but validate perplexity on another !
+    def __init__(self, language_model, input_scorer, maximal_perplexity, beam_size, random_tries_per_word,
+                 minimal_length, maximal_length):
+        assert isinstance(input_scorer, InputScorer)
+        assert random_tries_per_word > 0
+        self._language_model = language_model
+        self._scorer = input_scorer
+        self._random_tries_per_word = random_tries_per_word
+        self._beam_size = beam_size
+        self._minimal_length = minimal_length
+        self._maximal_length = maximal_length
+        self._maximal_perplexity = maximal_perplexity
+
+    def generate_input(self):
+        """
+        Maximize score(sentence) with respect to minimal likelihood score.
+        :return:
+        """
+        # Each element is of the form
+        # (scores sum, sum(log2 prob), sentence_prefix)
+        beam = [(0, 0, [])]
+        options = []
+        for index in xrange(self._maximal_length):
+            next_beam = []
+            for score_sum, log2_sum, prefix in beam:
+                for i in xrange(self._random_tries_per_word):
+                    if index == self._maximal_length - 1:
+                        word = ngram_model.NGramModel.STOP_TOKEN_WORD
+                        prob = self._language_model.word_prob(prefix, word)
+                    else:
+                        word, prob = self._language_model.generate_word(prefix)
+                    new_log2_sum = log2_sum + np.log2(prob)
+                    if index > 2:
+                        perplexity = 2 ** (-1. / (len(prefix) + 1.) * new_log2_sum)
+                        if perplexity > self._maximal_perplexity:
+                            continue
+                    if word == ngram_model.NGramModel.STOP_TOKEN_WORD:
+                        if len(prefix) > self._minimal_length:
+                            score = score_sum / len(prefix)
+                            options.append((score, prefix))
+                        continue
+                    new_prefix = prefix + [word]
+                    score_sum += self._scorer.score(new_prefix + [data.UNKNOWN_WORD], index)
+                    next_beam.append((score_sum, new_log2_sum, new_prefix))
+            if len(next_beam) == 0:
+                break
+            beam = sorted(next_beam, reverse=True)[:self._beam_size]
+        # Inform scorer about our selections.
+        if len(options) == 0:
+            return self.generate_input()
+        options.sort()
+        best_score, sentence = max(options)
+        self._scorer.inform_queried_with(sentence)
+        return sentence
+
