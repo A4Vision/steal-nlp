@@ -331,7 +331,7 @@ class BeamSearchInputGenerator(InputGenerator):
     """
     # TODO(bugabuga): generate using one model, but validate perplexity on another !
     def __init__(self, language_model, input_scorer, maximal_perplexity, beam_size, random_tries_per_word,
-                 minimal_length, maximal_length):
+                 minimal_length, maximal_length, validator_language_model):
         assert isinstance(input_scorer, InputScorer)
         assert random_tries_per_word > 0
         self._language_model = language_model
@@ -341,6 +341,7 @@ class BeamSearchInputGenerator(InputGenerator):
         self._minimal_length = minimal_length
         self._maximal_length = maximal_length
         self._maximal_perplexity = maximal_perplexity
+        self._validator_language_model = validator_language_model
 
     def generate_input(self):
         """
@@ -357,9 +358,10 @@ class BeamSearchInputGenerator(InputGenerator):
                 for i in xrange(self._random_tries_per_word):
                     if index == self._maximal_length - 1:
                         word = ngram_model.NGramModel.STOP_TOKEN_WORD
-                        prob = self._language_model.word_prob(prefix, word)
+                        prob = self._validator_language_model.word_prob(prefix, word)
                     else:
-                        word, prob = self._language_model.generate_word(prefix)
+                        word = self._language_model.generate_word(prefix)
+                        prob = self._validator_language_model.word_prob(prefix, word)
                     new_log2_sum = log2_sum + np.log2(prob)
                     if index > 2:
                         perplexity = 2 ** (-1. / (len(prefix) + 1.) * new_log2_sum)

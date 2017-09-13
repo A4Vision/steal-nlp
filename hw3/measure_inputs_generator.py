@@ -84,7 +84,8 @@ def create_globals():
 def measure_beam_search(nqueries):
     scorer = inputs_generator.MaxEntropy(dict_vectorizer, model, original_model_interface)
     print ngram.sentences_perplexity([ngram.generate_sentence(30)])
-    beam = inputs_generator.BeamSearchInputGenerator(ngram, scorer, 100, 3, 2, 20, 30)
+    beam = inputs_generator.BeamSearchInputGenerator(ngram, scorer, 100, 3, 2, 20, 30,
+                                                     ngram)
     measure_generator(beam, nqueries, "beam search")
 
 

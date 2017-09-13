@@ -144,13 +144,12 @@ class NGramModel(object):
         # Randomize based on unigrams
         else:
             num = self._unigram_randomizer.random_element()
-        prob = self._trigram_prob(prefix_numbers + (num,))
-        return self._num_to_word[num], prob
+        return self._num_to_word[num]
 
     def generate_sentence(self, max_length):
         sentence = []
         for i in xrange(max_length):
-            word, prob = self.generate_word(sentence)
+            word = self.generate_word(sentence)
             if word == NGramModel.STOP_TOKEN_WORD:
                 break
             sentence.append(word)

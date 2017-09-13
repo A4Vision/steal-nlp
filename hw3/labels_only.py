@@ -137,13 +137,16 @@ def create_sentences_generators(args, stolen_model, length_generator,
     # Switch(args.strategy) --> create sentences_generator according to the selected strategy.
     if args.strategy == "BEAM_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        trivial_scorer, 100, 3, 3, 20, 30)
+                                                                        trivial_scorer, 100, 3, 3, 20, 30,
+                                                                        data_preprocess.original_ngram_language_model())
     elif args.strategy == "BEAM_MAX_ENTROPY_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        honest_max_entropy_scorer, 100, 3, 3, 20, 30)
+                                                                        honest_max_entropy_scorer, 100, 3, 3, 20, 30,
+                                                                        data_preprocess.original_ngram_language_model())
     elif args.strategy == "BEAM_MAX_GRADIENT_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        honest_max_gradient_scorer, 100, 3, 3, 20, 30)
+                                                                        honest_max_gradient_scorer, 100, 3, 3, 20, 30,
+                                                                        data_preprocess.original_ngram_language_model())
     elif args.strategy == "FROM_TRAIN_SET_MAX_ENTROPY":
         sentences_generator = inputs_generator.SelectFromOtherInputsGenerator(
             train_set_generator, honest_max_entropy_scorer, 10)

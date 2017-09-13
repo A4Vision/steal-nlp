@@ -1,4 +1,5 @@
 import collections
+import fractions
 import glob
 import os
 import sys
@@ -46,7 +47,7 @@ def simplify_title(title):
     l = title_pattern.findall(title)
     assert len(l) == 1
     words, reg_coef, improvement, method = l[0]
-    return "{},#W={},impr={},reg={}".format(method, words, improvement, reg_coef)
+    return "{},impr={},reg={}".format(method, improvement, reg_coef)
 
 
 def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors, markers):
@@ -59,8 +60,8 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors, markers):
         print len(x), len(y)
         print x
         print y
-        x = x[3:]
-        y = y[3:]
+        x = x[5:]
+        y = y[5:]
         ax.plot(x, y, '--', marker=marker, label=title, color=color)
     ax.set_xlabel(xlabel)
     for tick in ax.xaxis.get_major_ticks():
@@ -68,16 +69,18 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors, markers):
     ax.set_ylabel(ylabel)
     # Shrink current axis by 20%
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
+    ax.set_position([box.x0, box.y0 + box.height * 0.25, box.width, box.height * 0.75])
 
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 6})
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.5), prop={'size': 11})
 
 
 def main():
-    pattern = sys.argv[1]
-    assert pattern.endswith("txt")
-    files = glob.glob(pattern)
-    print pattern
+    patterns = sys.argv[1:]
+    files = []
+    for pattern in patterns:
+        assert pattern.endswith("txt")
+        files += glob.glob(pattern)
+        print pattern
     print files
     dirname = os.path.dirname(files[0])
     assert all(os.path.dirname(f) == dirname for f in files)
@@ -86,24 +89,24 @@ def main():
     ys_names = ("unique_words_amounts",
                 "accuracies", "l2 distances", "validation KL", "w l2 norm",
                 "norm percent from loss")
-    colors = ["red", "green", "blue", "orange", "black", "purple", "yellow", "gray", "pink"] * 4
-    markers = ['+', 'o', 's', '.'] * 10
+    colors = ["red", "green", "blue", "orange", "black", "purple", "yellow", "gray", "pink"]
+    markers = ['+', 'o', 's', '.']
+    assert fractions.gcd(len(markers), len(colors)) == 1
+    colors *= len(markers)
+    markers *= len(colors)
     assert len(colors) >= len(ys_names)
     data = rows_data(files, ys_names + (x_name,))
     valid_filenames = sorted(set(sum([v.keys() for v in data.values()], [])))
     print valid_filenames
-    title2color = dict(zip(valid_filenames, colors))
-    for plot_type, color in zip(ys_names, colors):
+    for plot_type in ys_names:
         plt.clf()
         plt.cla()
-        titles, ys_lists = zip(*data.get(plot_type, {}).iteritems())
+        titles, ys_lists = zip(*sorted(data.get(plot_type, {}).items()))
         xs = [data.get(x_name, {})[title] for title in titles]
         # TODO(bugabuga): read all the parameters from the output file.
         titles_simple = map(simplify_title, titles)
         print 'plot_type', plot_type
-        plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, [title2color[t] for t in titles
-                                                                       if t in valid_filenames],
-                  markers)
+        plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, colors, markers)
 
         plt.savefig(dirname + "/" + plot_type + ".png")
 
