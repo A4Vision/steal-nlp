@@ -73,19 +73,6 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors, markers):
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 6})
 
 
-def different_markers_for_colors(colors):
-    markers = ['s', 'o', '+']
-    color_to_counter = collections.defaultdict(int)
-    res = []
-    print collections.Counter(colors)
-    for c in colors:
-        index = color_to_counter[c]
-        print index
-        res.append(markers[index])
-        color_to_counter[c] += 1
-    return res
-
-
 def main():
     pattern = sys.argv[1]
     assert pattern.endswith("txt")
@@ -99,7 +86,8 @@ def main():
     ys_names = ("unique_words_amounts",
                 "accuracies", "l2 distances", "validation KL", "w l2 norm",
                 "norm percent from loss")
-    colors = ["red", "green", "blue", "orange", "black", "purple", "magenta", "cyan", "yellow", "gray"] * 4
+    colors = ["red", "green", "blue", "orange", "black", "purple", "yellow", "gray", "pink"] * 4
+    markers = ['+', 'o', 's', '.'] * 10
     assert len(colors) >= len(ys_names)
     data = rows_data(files, ys_names + (x_name,))
     valid_filenames = sorted(set(sum([v.keys() for v in data.values()], [])))
@@ -113,7 +101,6 @@ def main():
         # TODO(bugabuga): read all the parameters from the output file.
         titles_simple = map(simplify_title, titles)
         print 'plot_type', plot_type
-        markers = different_markers_for_colors(colors[:len(valid_filenames)])
         plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, [title2color[t] for t in titles
                                                                        if t in valid_filenames],
                   markers)

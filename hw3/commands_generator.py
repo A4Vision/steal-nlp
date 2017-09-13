@@ -31,7 +31,7 @@ def command(words, strategy, l2_weight, loss_improvement,
         batch_size = 700
         first_random = 6000
     else:
-        max_queries = 100000
+        max_queries = 200000
         batch_size = 5000
         first_random = 10000
     if no_forward:
