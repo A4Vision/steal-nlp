@@ -24,7 +24,7 @@ def command(words, strategy, l2_weight, loss_improvement,
               "--l2_weight={2} --loss_improvement={3} --minimal_frequency={4} --total_queries_amount={5} " \
               "--batch_size={6} --max_batch_time_secs={10:.0f} " \
               "--strategy={7} --first_random={9} --num_words={8} "
-    FORWARD_OUTPUT = ">& ~/outputs/output_labels_only_freq{4}_words{" \
+    FORWARD_OUTPUT = ">& ~/outputs2/output_labels_only_freq{4}_words{" \
                      "8}_l2_weight{2}_lossimpr{3}_eta{1}_{7}.txt & "
     if is_demo:
         max_queries = 7000
