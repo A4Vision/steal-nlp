@@ -118,12 +118,12 @@ def create_sentences_generators(args, stolen_model, length_generator,
     # Create scorers
     trivial_scorer = inputs_generator.TrivialInputScorer()
     # Cheating scorers
-    max_entropy_scorer = inputs_generator.MaxEntropy(data_preprocess.dict_vectorizer(), stolen_model,
-                                                     original_interface)
-    subtle_decision_scorer = inputs_generator.SubtleDecision(data_preprocess.dict_vectorizer(), stolen_model,
-                                                             original_interface)
-    max_gradient_scorer = inputs_generator.MaximalGradient(data_preprocess.dict_vectorizer(), stolen_model,
-                                                           original_interface)
+    # max_entropy_scorer = inputs_generator.MaxEntropy(data_preprocess.dict_vectorizer(), stolen_model,
+    #                                                  original_interface)
+    # subtle_decision_scorer = inputs_generator.SubtleDecision(data_preprocess.dict_vectorizer(), stolen_model,
+    #                                                          original_interface)
+    # max_gradient_scorer = inputs_generator.MaximalGradient(data_preprocess.dict_vectorizer(), stolen_model,
+    #                                                        original_interface)
     # No cheat scorers
     # TODO(bugabuga): use the no cheat scorers instead of the cheating scorers !
     stolen_model_interface = model_interface.ModelInterface(stolen_model, data_preprocess.dict_vectorizer())
@@ -140,22 +140,22 @@ def create_sentences_generators(args, stolen_model, length_generator,
                                                                         trivial_scorer, 100, 3, 3, 20, 30)
     elif args.strategy == "BEAM_MAX_ENTROPY_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        max_entropy_scorer, 100, 3, 3, 20, 30)
+                                                                        honest_max_entropy_scorer, 100, 3, 3, 20, 30)
     elif args.strategy == "BEAM_MAX_GRADIENT_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.BeamSearchInputGenerator(data_preprocess.narrow_ngram_language_model(),
-                                                                        max_gradient_scorer, 100, 3, 3, 20, 30)
+                                                                        honest_max_gradient_scorer, 100, 3, 3, 20, 30)
     elif args.strategy == "FROM_TRAIN_SET_MAX_ENTROPY":
         sentences_generator = inputs_generator.SelectFromOtherInputsGenerator(
-            train_set_generator, max_entropy_scorer, 10)
+            train_set_generator, honest_max_entropy_scorer, 10)
     elif args.strategy == "FROM_TRAIN_SET_MAX_GRADIENT":
         sentences_generator = inputs_generator.SelectFromOtherInputsGenerator(
-            train_set_generator, max_gradient_scorer, 10)
+            train_set_generator, honest_max_gradient_scorer, 10)
     elif args.strategy == "MAX_ENTROPY_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.SelectFromOtherInputsGenerator(
-            language_model_generator, max_entropy_scorer, 10)
+            language_model_generator, honest_max_entropy_scorer, 10)
     elif args.strategy == "MAX_GRADIENT_LANGUAGE_MODEL":
         sentences_generator = inputs_generator.SelectFromOtherInputsGenerator(
-            language_model_generator, max_gradient_scorer, 10)
+            language_model_generator, honest_max_gradient_scorer, 10)
     elif args.strategy == "LANGUAGE_MODEL":
         sentences_generator = language_model_generator
     elif args.strategy == "UNIGRAMS":
@@ -165,15 +165,15 @@ def create_sentences_generators(args, stolen_model, length_generator,
     elif args.strategy == "MAX_SIGNIFICANCE":
         sentences_generator = inputs_generator.GreedyInputsGenerator(length_generator,
                                                                      proportional_words_randomizer,
-                                                                     subtle_decision_scorer, 10)
+                                                                     honest_subtle_decision_scorer, 10)
     elif args.strategy == "MAX_GRADIENT":
         sentences_generator = inputs_generator.GreedyInputsGenerator(length_generator,
                                                                      proportional_words_randomizer,
-                                                                     max_gradient_scorer, 10)
+                                                                     honest_max_gradient_scorer, 10)
     elif args.strategy == "MAX_ENTROPY":
         sentences_generator = inputs_generator.GreedyInputsGenerator(length_generator,
                                                                      proportional_words_randomizer,
-                                                                     max_entropy_scorer, 10)
+                                                                     honest_max_entropy_scorer, 10)
     elif args.strategy == "FROM_TRAIN_SET":
         sentences_generator = train_set_generator
     elif args.strategy == "IID_WORDS":

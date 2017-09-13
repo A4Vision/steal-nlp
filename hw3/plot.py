@@ -49,16 +49,19 @@ def simplify_title(title):
     return "{},#W={},impr={},reg={}".format(method, words, improvement, reg_coef)
 
 
-def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
+def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors, markers):
     my_dpi = 96
     fig = plt.figure(figsize=(1200 / my_dpi, 800 / my_dpi), dpi=my_dpi)
     ax = plt.subplot(111)
 
-    for title, color, y, x in zip(titles, colors, ys_lists, xs):
+    for title, marker, color, y, x in zip(titles, markers, colors, ys_lists, xs):
+        print title
         print len(x), len(y)
         print x
         print y
-        ax.plot(x, y, '--+', label=title, color=color)
+        x = x[3:]
+        y = y[3:]
+        ax.plot(x, y, '--', marker=marker, label=title, color=color)
     ax.set_xlabel(xlabel)
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(8)
@@ -68,6 +71,19 @@ def plot_data(xs, ys_lists, titles, xlabel, ylabel, colors):
     ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), prop={'size': 6})
+
+
+def different_markers_for_colors(colors):
+    markers = ['s', 'o', '+']
+    color_to_counter = collections.defaultdict(int)
+    res = []
+    print collections.Counter(colors)
+    for c in colors:
+        index = color_to_counter[c]
+        print index
+        res.append(markers[index])
+        color_to_counter[c] += 1
+    return res
 
 
 def main():
@@ -82,7 +98,7 @@ def main():
     x_name = "Single word queries amounts"
     ys_names = ("unique_words_amounts",
                 "accuracies", "l2 distances", "validation KL", "w l2 norm",
-                "current training losses")
+                "norm percent from loss")
     colors = ["red", "green", "blue", "orange", "black", "purple", "magenta", "cyan", "yellow", "gray"] * 4
     assert len(colors) >= len(ys_names)
     data = rows_data(files, ys_names + (x_name,))
@@ -96,11 +112,15 @@ def main():
         xs = [data.get(x_name, {})[title] for title in titles]
         # TODO(bugabuga): read all the parameters from the output file.
         titles_simple = map(simplify_title, titles)
+        print 'plot_type', plot_type
+        markers = different_markers_for_colors(colors[:len(valid_filenames)])
         plot_data(xs, ys_lists, titles_simple, "#queries", plot_type, [title2color[t] for t in titles
-                                                                       if t in valid_filenames])
+                                                                       if t in valid_filenames],
+                  markers)
 
         plt.savefig(dirname + "/" + plot_type + ".png")
 
 
 if __name__ == '__main__':
     main()
+
